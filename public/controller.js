@@ -106,14 +106,19 @@ function wireJoinForm() {
 function wireControls() {
   document.querySelectorAll("[data-direction]").forEach((button) => {
     const direction = button.dataset.direction;
-    const start = () => startRepeatingInput(direction);
-    const stop = () => stopRepeatingInput(direction);
+    const start = (event) => {
+      event.preventDefault();
+      startRepeatingInput(direction);
+    };
+    const stop = (event) => {
+      event.preventDefault();
+      stopRepeatingInput(direction);
+    };
 
     button.addEventListener("pointerdown", start);
     button.addEventListener("pointerup", stop);
     button.addEventListener("pointerleave", stop);
     button.addEventListener("pointercancel", stop);
-    button.addEventListener("click", () => sendInput(direction));
   });
 }
 
@@ -290,7 +295,8 @@ function renderCountdownOverlay(room) {
 
 function wireActionButtons() {
   [elements.mazeAction, elements.swapAction, ...elements.freezeActions].forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
       if (socket.readyState !== WebSocket.OPEN || button.disabled) {
         return;
       }
