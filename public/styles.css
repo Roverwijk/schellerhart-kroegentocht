@@ -563,6 +563,24 @@ select {
   box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.08);
 }
 
+.shape-circle {
+  border-radius: 999px;
+}
+
+.shape-square {
+  border-radius: 8px;
+}
+
+.shape-diamond {
+  border-radius: 6px;
+  transform: rotate(45deg);
+}
+
+.shape-triangle {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
 .player-dot.is-frozen {
   width: 56%;
   height: 56%;

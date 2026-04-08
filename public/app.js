@@ -451,7 +451,7 @@ function renderLobbyPlayers(room) {
 
     row.innerHTML = `
       <div class="score-identity">
-        <span class="score-color" style="background:${player.colorHex}"></span>
+        <span class="score-color shape-${player.shape}" style="background:${player.colorHex}"></span>
         <div>
           <strong class="score-name">${player.name}</strong>
           <p class="score-meta">${capitalize(player.colorId)} speler</p>
@@ -488,6 +488,7 @@ function renderBoard(room) {
         const goal = document.createElement("div");
         goal.className = "goal-marker";
         goal.style.color = goalOwner.colorHex;
+        applyPlayerShape(goal, goalOwner.shape);
         goal.title = `${goalOwner.name} goal`;
         cellElement.append(goal);
       }
@@ -500,6 +501,9 @@ function renderBoard(room) {
           dot.classList.add("is-frozen");
         }
         dot.style.background = player.colorHex;
+        if (player.activeEffect?.id !== "freeze") {
+          applyPlayerShape(dot, player.shape);
+        }
         dot.title = player.name;
         cellElement.append(dot);
 
@@ -534,7 +538,9 @@ function renderScoreboard(room) {
     .forEach((player) => {
       const fragment = elements.scoreTemplate.content.cloneNode(true);
       const row = fragment.querySelector(".score-row");
-      fragment.querySelector(".score-color").style.background = player.colorHex;
+      const scoreColor = fragment.querySelector(".score-color");
+      scoreColor.style.background = player.colorHex;
+      applyPlayerShape(scoreColor, player.shape);
       fragment.querySelector(".score-name").textContent = player.name;
       fragment.querySelector(".score-meta").textContent = `${player.score} punten`;
       fragment.querySelector(".score-goals").textContent = `${player.score} totaal • ${player.mazeScore}/3 deze maze`;
@@ -790,12 +796,20 @@ function renderOverlayScores(room, isFinal) {
   elements.countdownOverlayScores.innerHTML = orderedPlayers.map((player) => `
     <div class="countdown-score-row">
       <span class="countdown-score-name">
-        <span class="countdown-score-dot" style="background:${player.colorHex}"></span>
+        <span class="countdown-score-dot shape-${player.shape}" style="background:${player.colorHex}"></span>
         ${player.name}
       </span>
       <span class="countdown-score-value">${player.score} totaal${isFinal ? "" : ` • ${player.mazeScore}/3 deze maze`}</span>
     </div>
   `).join("");
+}
+
+function applyPlayerShape(element, shape) {
+  if (!element || !shape) {
+    return;
+  }
+
+  element.classList.add(`shape-${shape}`);
 }
 
 function handleRoomSounds(previousRoom, nextRoom) {

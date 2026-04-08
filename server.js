@@ -10,10 +10,10 @@ const MAZE_WIDTH = 23;
 const MAZE_HEIGHT = 15;
 
 const COLORS = [
-  { id: "red", hex: "#ff5d73", start: { x: 1, y: 1 } },
-  { id: "blue", hex: "#58a6ff", start: { x: MAZE_WIDTH - 2, y: 1 } },
-  { id: "green", hex: "#61d095", start: { x: 1, y: MAZE_HEIGHT - 2 } },
-  { id: "gold", hex: "#ffd166", start: { x: MAZE_WIDTH - 2, y: MAZE_HEIGHT - 2 } }
+  { id: "red", hex: "#ff5d73", shape: "circle", start: { x: 1, y: 1 } },
+  { id: "blue", hex: "#58a6ff", shape: "diamond", start: { x: MAZE_WIDTH - 2, y: 1 } },
+  { id: "black", hex: "#1f1f1a", shape: "square", start: { x: 1, y: MAZE_HEIGHT - 2 } },
+  { id: "gold", hex: "#ffd166", shape: "triangle", start: { x: MAZE_WIDTH - 2, y: MAZE_HEIGHT - 2 } }
 ];
 
 const EFFECT_DEFS = {
@@ -227,6 +227,7 @@ function createPlayer(rawName, color) {
     name: displayName,
     colorId: color.id,
     colorHex: color.hex,
+    shape: color.shape,
     start: { ...color.start },
     position: { ...color.start },
     score: 0,
@@ -667,6 +668,7 @@ function serializeRoom() {
       name: player.name,
       colorId: player.colorId,
       colorHex: player.colorHex,
+      shape: player.shape,
       position: player.position,
       score: player.score,
       mazeScore: player.mazeScore,
