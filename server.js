@@ -597,11 +597,6 @@ function startNextRound() {
     player.effectEndsAt = 0;
     player.immunityUntil = 0;
     player.moveLockedUntil = 0;
-    player.cooldowns = {
-      maze: Date.now() + ACTION_CHARGE_MS,
-      gates: Date.now() + ACTION_CHARGE_MS,
-      freeze: Date.now() + ACTION_CHARGE_MS
-    };
     player.lastMoveAt = 0;
     player.lastTargetAt = 0;
     player.lastTargetId = null;
