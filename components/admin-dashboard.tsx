@@ -274,6 +274,7 @@ export function AdminDashboard() {
     <MobileShell
       title="Admin"
       phase={snapshot?.gameState.phase ?? "waiting"}
+      roundNumber={snapshot?.currentRound?.number ?? null}
       subtitle="Beheer fases, timers, scores en antwoordcorrecties zonder extra presentatiescherm."
       actions={
         snapshot?.gameState.phase === "upload" ? (

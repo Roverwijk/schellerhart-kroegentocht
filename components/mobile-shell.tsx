@@ -7,33 +7,49 @@ type MobileShellProps = {
   title: string;
   subtitle: string;
   phase?: Phase;
+  roundNumber?: number | null;
   actions?: ReactNode;
   children: ReactNode;
 };
 
-const phaseArtwork: Record<
-  Phase,
-  { src: string; alt: string; label: string }
-> = {
+const phaseArtwork: Record<Phase, { src: string; alt: string; label: string }> = {
   waiting: {
-    src: "/nel/nel-2.png",
-    alt: "Nel Bannink kijkt vrolijk de kroeg in",
+    src: "/nel/nel-a.png",
+    alt: "Nel Bannink proost met een regenboogbril",
     label: "Wacht op de start"
   },
   upload: {
-    src: "/nel/nel-3.png",
-    alt: "Nel Bannink lacht tussen de mensen in de kroeg",
+    src: "/nel/nel-b.png",
+    alt: "Nel Bannink zingt feestelijk met een microfoon",
     label: "Uploadfase"
   },
   voting: {
-    src: "/nel/nel-1.png",
-    alt: "Nel Bannink proost met een telefoon in beeld",
+    src: "/nel/nel-e.png",
+    alt: "Nel Bannink houdt een biertje omhoog",
     label: "Stemfase"
   },
   results: {
-    src: "/nel/nel-4.png",
-    alt: "Nel Bannink heft een glas bier",
+    src: "/nel/nel-f.png",
+    alt: "Nel Bannink trekt een gek gezicht",
     label: "Resultaten"
+  }
+};
+
+const roundUploadArtwork: Record<number, { src: string; alt: string; label: string }> = {
+  1: {
+    src: "/nel/nel-b.png",
+    alt: "Nel Bannink zingt feestelijk met een microfoon",
+    label: "Ronde 1"
+  },
+  2: {
+    src: "/nel/nel-c.png",
+    alt: "Nel Bannink houdt een telefoon met proost in beeld",
+    label: "Ronde 2"
+  },
+  3: {
+    src: "/nel/nel-d.png",
+    alt: "Nel Bannink houdt een shoarma omhoog",
+    label: "Ronde 3"
   }
 };
 
@@ -41,10 +57,12 @@ export function MobileShell({
   title,
   subtitle,
   phase = "waiting",
+  roundNumber = null,
   actions,
   children
 }: MobileShellProps) {
-  const artwork = phaseArtwork[phase];
+  const artwork =
+    phase === "upload" && roundNumber ? roundUploadArtwork[roundNumber] ?? phaseArtwork.upload : phaseArtwork[phase];
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.2),_transparent_35%),linear-gradient(180deg,_#fff7ed_0%,_#f8fafc_42%,_#e2e8f0_100%)] px-4 py-6 text-ink">

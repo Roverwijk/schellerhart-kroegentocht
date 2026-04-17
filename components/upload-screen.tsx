@@ -160,6 +160,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     <MobileShell
       title="Upload"
       phase={gameState?.phase ?? "waiting"}
+      roundNumber={currentRound?.number ?? null}
       subtitle={
         currentRound
           ? `Ronde ${currentRound.number}: upload 2 foto's voor jullie vaste opdrachten.`
