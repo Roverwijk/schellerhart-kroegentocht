@@ -1,4 +1,4 @@
-insert into public.proverbs (canonical_text, normalized_text)
+﻿insert into public.proverbs (canonical_text, normalized_text)
 values
   ('Er geen kaas van gegeten hebben', public.normalize_phrase('Er geen kaas van gegeten hebben')),
   ('Van twee walletjes eten', public.normalize_phrase('Van twee walletjes eten')),
@@ -27,7 +27,7 @@ values
   ('Het is een gebed zonder eind', public.normalize_phrase('Het is een gebed zonder eind')),
   ('Geen nieuws is goed nieuws', public.normalize_phrase('Geen nieuws is goed nieuws')),
   ('De waarheid komt altijd boven water', public.normalize_phrase('De waarheid komt altijd boven water')),
-  ('In het land der blinden is éénoog koning', public.normalize_phrase('In het land der blinden is éénoog koning')),
+  ('In het land der blinden is eenoog koning', public.normalize_phrase('In het land der blinden is eenoog koning')),
   ('Het paard achter de wagen spannen', public.normalize_phrase('Het paard achter de wagen spannen')),
   ('Een mens lijdt het meest door het lijden dat hij vreest', public.normalize_phrase('Een mens lijdt het meest door het lijden dat hij vreest')),
   ('Van het concert des levens krijgt niemand een program', public.normalize_phrase('Van het concert des levens krijgt niemand een program')),
@@ -41,3 +41,4 @@ values
   ('Iemand onder de tafel drinken', public.normalize_phrase('Iemand onder de tafel drinken')),
   ('Dat scheelt een slok op een borrel', public.normalize_phrase('Dat scheelt een slok op een borrel'))
 on conflict (normalized_text) do nothing;
+

@@ -17,10 +17,10 @@ values
   ('Een stuk in de kraag drinken', public.normalize_phrase('Een stuk in de kraag drinken')),
   ('Een storm in een glas water', public.normalize_phrase('Een storm in een glas water')),
   ('Uit een ander vaatje tappen', public.normalize_phrase('Uit een ander vaatje tappen')),
-  ('In de olie zijn', public.normalize_phrase('In de olie zijn')),
+  ('Dat scheelt een slok op een borrel', public.normalize_phrase('Dat scheelt een slok op een borrel')),
   ('Water bij de wijn doen', public.normalize_phrase('Water bij de wijn doen')),
   ('Tussen wal en schip vallen', public.normalize_phrase('Tussen wal en schip vallen')),
-  ('Een afzakkertje nemen', public.normalize_phrase('Een afzakkertje nemen')),
+  ('Iemand onder de tafel drinken', public.normalize_phrase('Iemand onder de tafel drinken')),
   ('Het roer omgooien', public.normalize_phrase('Het roer omgooien')),
   ('Met de gebakken peren zitten', public.normalize_phrase('Met de gebakken peren zitten')),
   ('Als de drank is in de man, is de wijsheid in de kan', public.normalize_phrase('Als de drank is in de man, is de wijsheid in de kan')),
@@ -28,10 +28,11 @@ values
   ('Om de hete brij heen draaien', public.normalize_phrase('Om de hete brij heen draaien')),
   ('Zo dronken als een tor', public.normalize_phrase('Zo dronken als een tor')),
   ('Wind in de zeilen hebben', public.normalize_phrase('Wind in de zeilen hebben')),
-  ('Onder invloed zijn', public.normalize_phrase('Onder invloed zijn')),
+  ('Oude wijn in nieuwe zakken', public.normalize_phrase('Oude wijn in nieuwe zakken')),
   ('De bloemetjes buiten zetten', public.normalize_phrase('De bloemetjes buiten zetten')),
   ('In iemands vaarwater zitten', public.normalize_phrase('In iemands vaarwater zitten')),
-  ('Een loden pijp hebben', public.normalize_phrase('Een loden pijp hebben'))
+  ('Op een droogje zitten', public.normalize_phrase('Op een droogje zitten')),
+  ('De gifbeker leegdrinken', public.normalize_phrase('De gifbeker leegdrinken'))
 on conflict (normalized_text) do nothing;
 
 insert into public.rounds (number, title)
@@ -49,16 +50,16 @@ with assignment_source as (
       (1, 'team-rood', 1, 'Te diep in het glaasje hebben gekeken'),
       (1, 'team-rood', 2, 'Met de neus in de boter vallen'),
       (1, 'team-blauw', 1, 'Boter bij de vis'),
-      (1, 'team-blauw', 2, 'De boot missen'),
+      (1, 'team-blauw', 2, 'De gifbeker leegdrinken'),
       (1, 'team-groen', 1, 'Roet in het eten gooien'),
       (1, 'team-groen', 2, 'Als de kat van huis is, dansen de muizen op tafel'),
       (1, 'team-geel', 1, 'Een stuk in de kraag drinken'),
       (1, 'team-geel', 2, 'Een storm in een glas water'),
       (2, 'team-rood', 1, 'Uit een ander vaatje tappen'),
-      (2, 'team-rood', 2, 'In de olie zijn'),
+      (2, 'team-rood', 2, 'Dat scheelt een slok op een borrel'),
       (2, 'team-blauw', 1, 'Water bij de wijn doen'),
       (2, 'team-blauw', 2, 'Tussen wal en schip vallen'),
-      (2, 'team-groen', 1, 'Een afzakkertje nemen'),
+      (2, 'team-groen', 1, 'Iemand onder de tafel drinken'),
       (2, 'team-groen', 2, 'Het roer omgooien'),
       (2, 'team-geel', 1, 'Met de gebakken peren zitten'),
       (2, 'team-geel', 2, 'Als de drank is in de man, is de wijsheid in de kan'),
@@ -66,10 +67,10 @@ with assignment_source as (
       (3, 'team-rood', 2, 'Om de hete brij heen draaien'),
       (3, 'team-blauw', 1, 'Zo dronken als een tor'),
       (3, 'team-blauw', 2, 'Wind in de zeilen hebben'),
-      (3, 'team-groen', 1, 'Onder invloed zijn'),
+      (3, 'team-groen', 1, 'Oude wijn in nieuwe zakken'),
       (3, 'team-groen', 2, 'De bloemetjes buiten zetten'),
       (3, 'team-geel', 1, 'In iemands vaarwater zitten'),
-      (3, 'team-geel', 2, 'Een loden pijp hebben')
+      (3, 'team-geel', 2, 'Op een droogje zitten')
   ) as rows(round_number, team_slug, slot, proverb_text)
 )
 insert into public.assignments (round_id, team_id, proverb_id, slot)
