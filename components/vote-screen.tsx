@@ -33,6 +33,22 @@ type DraftState = {
   selectedProverb: ProverbSuggestion | null;
 };
 
+function getNextBrowseIndex(items: VotingQueueItem[], fromIndex: number): number {
+  if (items.length === 0) {
+    return 0;
+  }
+
+  const nextUnanswered = items.findIndex(
+    (item, index) => index > fromIndex && !item.is_answered
+  );
+
+  if (nextUnanswered >= 0) {
+    return nextUnanswered;
+  }
+
+  return Math.min(fromIndex + 1, items.length - 1);
+}
+
 export function VoteScreen({ lockedTeamSlug }: VoteScreenProps) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -193,7 +209,6 @@ export function VoteScreen({ lockedTeamSlug }: VoteScreenProps) {
     });
     setSubmitting(false);
 
-    const nextIndex = Math.min(currentIndex + 1, Math.max(items.length - 1, 0));
     const refresh = await fetch(`/api/vote/next?teamId=${teamId}`);
     const nextPayload = (await refresh.json()) as VotePayload;
     setGameState(nextPayload.gameState);
@@ -201,9 +216,7 @@ export function VoteScreen({ lockedTeamSlug }: VoteScreenProps) {
     setCompleted(nextPayload.completed);
     setClosed(nextPayload.closed);
     setReview(nextPayload.review);
-    setCurrentIndex(
-      nextPayload.items.length === 0 ? 0 : Math.min(nextIndex, nextPayload.items.length - 1)
-    );
+    setCurrentIndex(getNextBrowseIndex(nextPayload.items, currentIndex));
   }
 
   return (
@@ -268,7 +281,7 @@ export function VoteScreen({ lockedTeamSlug }: VoteScreenProps) {
           ) : null}
 
           {canVote && current ? (
-            <div className="space-y-4">
+            <div key={current.submission_id} className="space-y-4">
               <img
                 alt={`Foto van ${current.team_name}`}
                 className="h-72 w-full rounded-4xl object-cover"
