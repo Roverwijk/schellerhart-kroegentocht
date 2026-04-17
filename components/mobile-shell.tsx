@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import type { Phase } from "@/lib/types";
 
+const artworkVersion = "20260417b";
+
 type MobileShellProps = {
   title: string;
   subtitle: string;
@@ -14,22 +16,22 @@ type MobileShellProps = {
 
 const phaseArtwork: Record<Phase, { src: string; alt: string; label: string }> = {
   waiting: {
-    src: "/nel/nel-a.png",
+    src: `/nel/nel-a.png?v=${artworkVersion}`,
     alt: "Nel Bannink proost met een regenboogbril",
     label: "Wacht op de start"
   },
   upload: {
-    src: "/nel/nel-b.png",
+    src: `/nel/nel-b.png?v=${artworkVersion}`,
     alt: "Nel Bannink zingt feestelijk met een microfoon",
     label: "Uploadfase"
   },
   voting: {
-    src: "/nel/nel-e.png",
+    src: `/nel/nel-e.png?v=${artworkVersion}`,
     alt: "Nel Bannink houdt een biertje omhoog",
     label: "Stemfase"
   },
   results: {
-    src: "/nel/nel-f.png",
+    src: `/nel/nel-f.png?v=${artworkVersion}`,
     alt: "Nel Bannink trekt een gek gezicht",
     label: "Resultaten"
   }
@@ -37,17 +39,17 @@ const phaseArtwork: Record<Phase, { src: string; alt: string; label: string }> =
 
 const roundUploadArtwork: Record<number, { src: string; alt: string; label: string }> = {
   1: {
-    src: "/nel/nel-b.png",
+    src: `/nel/nel-b.png?v=${artworkVersion}`,
     alt: "Nel Bannink zingt feestelijk met een microfoon",
     label: "Ronde 1"
   },
   2: {
-    src: "/nel/nel-c.png",
+    src: `/nel/nel-c.png?v=${artworkVersion}`,
     alt: "Nel Bannink houdt een telefoon met proost in beeld",
     label: "Ronde 2"
   },
   3: {
-    src: "/nel/nel-d.png",
+    src: `/nel/nel-d.png?v=${artworkVersion}`,
     alt: "Nel Bannink houdt een shoarma omhoog",
     label: "Ronde 3"
   }
