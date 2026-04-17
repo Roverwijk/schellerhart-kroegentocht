@@ -1,34 +1,121 @@
-# Maze Sabotage Arena
+# Kroegentocht Spreekwoorden
 
-Realtime multiplayer maze race for 2 to 4 players with a shared dashboard.
+Mobiele realtime webapp voor een kroegentochtspel met 4 teams. Teams uploaden foto's van uitgebeelde spreekwoorden, andere teams raden die foto's tijdens de stemfase, en de admin beheert fases, timers, correcties en eindscore.
 
-## What is included
+## Stack
 
-- Server-authoritative movement and sabotage logic
-- Shared 11x11 maze that regenerates every round
-- Player join flow with color assignment from the 4 corners
-- Goal scoring, action points, round win handling, and maze reset
-- All 5 sabotage actions from the spec
-- Player view with keyboard and touch controls
-- Shared dashboard mode from the same client at `/?mode=dashboard`
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Database
+- Supabase Storage
+- Supabase Realtime
+- Vercel deployment
 
-## Project structure
+## Functies
 
-- `server.js`: static file server, WebSocket server, game rules, and maze generation
-- `public/index.html`: main UI shell for player and dashboard modes
-- `public/styles.css`: responsive styling for mobile and shared-screen display
-- `public/app.js`: client-side WebSocket sync, rendering, input, and sabotage UI
+- `/upload`: team kiest naam, uploadt foto en vult spreekwoord in met autosuggest
+- `/vote`: team stemt mobiel per foto, ziet voortgang en timer, en krijgt na afloop een overzicht met goed/fout
+- `/admin`: fasebeheer, countdowns, live voortgang, score-overzicht, overrides en canonical spreekwoorden
+- Normalisatie van vrije tekst:
+  - lowercase
+  - trimmen
+  - dubbele spaties verwijderen
+  - leestekens verwijderen
+- Fuzzy suggesties op basis van bestaande spreekwoorden
+- Centrale game state in de database
+- Invoer stopt automatisch zodra deadlines verlopen
 
-## Run
+## Lokale installatie
 
-1. Install Node.js 18+.
-2. Run `npm install`.
-3. Run `npm start`.
-4. Open `http://localhost:3000` on player devices.
-5. Open `http://localhost:3000/?mode=dashboard` on the shared screen.
+1. Installeer dependencies:
 
-## Notes
+```bash
+npm install
+```
 
-- Re-targeting the same player within 5 seconds adds a +1 action point penalty.
-- Targets also receive brief sabotage immunity after being hit to reduce spam.
-- Only one active timed effect can exist on a player at once; new effects overwrite the old one.
+2. Maak een lokale env:
+
+```bash
+cp .env.local.example .env.local
+```
+
+3. Vul in `.env.local` je Supabase projectwaarden en admincode in.
+
+4. Maak in Supabase de database en storage klaar:
+   - Open de SQL Editor
+   - Draai eerst [schema.sql](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase/schema.sql)
+   - Draai daarna [seed.sql](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase/seed.sql)
+
+5. Start lokaal:
+
+```bash
+npm run dev
+```
+
+6. Open:
+   - `http://localhost:3000/upload`
+   - `http://localhost:3000/vote`
+   - `http://localhost:3000/admin`
+
+## Supabase opzet
+
+### Tabellen
+
+- `teams`
+- `proverbs`
+- `submissions`
+- `votes`
+- `game_state`
+
+### Storage
+
+- Bucket: `submission-photos`
+- Staat publiek voor read-only fotovertoning
+- Uploads lopen via server-side API met service role key
+
+### Realtime
+
+- `game_state` staat in de `supabase_realtime` publication
+- Clients luisteren live op fasewissels en timerupdates
+
+## Spelregels in de app
+
+- Alleen uploaden tijdens fase `upload`
+- Alleen stemmen tijdens fase `voting`
+- Bij verlopen deadline blokkeert invoer automatisch
+- Een team kan niet op zijn eigen submission stemmen
+- Per submission kan elk team maar één stem uitbrengen
+- Correcte stemmen leveren 1 punt op voor het makersteam van die foto
+- Stemteam krijgt zelf geen punten
+- Admin kan antwoordbeoordelingen handmatig overriden
+
+## Projectstructuur
+
+- [app](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/app) - routes en API handlers
+- [components](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/components) - mobiele UI componenten
+- [lib](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/lib) - domeinlogica, Supabase helpers en normalisatie
+- [supabase](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase) - schema en seed scripts
+
+## Vercel deploy
+
+1. Push de repository naar GitHub.
+2. Maak in Vercel een nieuw project op basis van deze repository.
+3. Voeg in Vercel Environment Variables toe:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_STORAGE_BUCKET`
+   - `ADMIN_PASSCODE`
+4. Deploy het project.
+5. Controleer na deploy:
+   - upload werkt op mobiel
+   - foto's verschijnen in storage
+   - fasewissels updaten direct
+   - stemmen en scoretelling lopen correct
+
+## Productie-opmerkingen
+
+- De adminroute gebruikt een eenvoudige pincode-cookie, bedoeld voor praktisch gebruik tijdens een evenement.
+- Voor strengere productiebeveiliging kun je later Supabase Auth of Vercel password protection toevoegen.
+- Omdat uploads server-side verlopen, hoeft de client geen directe schrijfrechten op Storage of database te hebben.
