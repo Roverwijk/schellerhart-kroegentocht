@@ -8,7 +8,9 @@ import type {
   ActiveSubmission,
   AdminSnapshot,
   GameState,
+  Round,
   Team,
+  TeamAssignment,
   TeamProgress,
   VotingQueueItem,
   VoteReviewItem
@@ -18,6 +20,19 @@ type ProverbRow = {
   id: string;
   canonical_text: string;
   normalized_text: string;
+};
+
+type AssignmentRow = {
+  id: string;
+  round_id: string;
+  team_id: string;
+  slot: number;
+  proverb_id: string;
+  proverb: { canonical_text: string } | { canonical_text: string }[];
+  submission:
+    | { id: string; photo_url: string | null }
+    | { id: string; photo_url: string | null }[]
+    | null;
 };
 
 export async function getGameState(supabase: SupabaseClient): Promise<GameState> {
@@ -40,6 +55,82 @@ export async function getTeams(supabase: SupabaseClient): Promise<Team[]> {
     throw new Error("Teams konden niet worden geladen.");
   }
   return data ?? [];
+}
+
+export async function getRounds(supabase: SupabaseClient): Promise<Round[]> {
+  const { data, error } = await supabase.from("rounds").select("*").order("number");
+  if (error) {
+    throw new Error("Rondes konden niet worden geladen.");
+  }
+  return data ?? [];
+}
+
+export async function getCurrentRound(supabase: SupabaseClient): Promise<Round | null> {
+  const gameState = await getGameState(supabase);
+  if (!gameState.current_round_id) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("rounds")
+    .select("*")
+    .eq("id", gameState.current_round_id)
+    .single();
+
+  if (error || !data) {
+    throw new Error("Actieve ronde kon niet worden geladen.");
+  }
+
+  return data;
+}
+
+function formatAssignments(rows: AssignmentRow[]): TeamAssignment[] {
+  return rows.map((assignment) => {
+    const proverb = Array.isArray(assignment.proverb) ? assignment.proverb[0] : assignment.proverb;
+    const submission = Array.isArray(assignment.submission)
+      ? assignment.submission[0] ?? null
+      : assignment.submission;
+
+    return {
+      id: assignment.id,
+      round_id: assignment.round_id,
+      team_id: assignment.team_id,
+      slot: assignment.slot,
+      proverb_id: assignment.proverb_id,
+      proverb_text: proverb.canonical_text,
+      submission_id: submission?.id ?? null,
+      photo_url: submission?.photo_url ?? null,
+      is_uploaded: Boolean(submission?.id)
+    };
+  });
+}
+
+export async function getAssignmentsForRound(
+  supabase: SupabaseClient,
+  roundId: string
+): Promise<TeamAssignment[]> {
+  const { data, error } = await supabase
+    .from("assignments")
+    .select(
+      `
+        id,
+        round_id,
+        team_id,
+        slot,
+        proverb_id,
+        proverb:proverbs!assignments_proverb_id_fkey(canonical_text),
+        submission:submissions(id, photo_url)
+      `
+    )
+    .eq("round_id", roundId)
+    .order("slot")
+    .order("team_id");
+
+  if (error) {
+    throw new Error("Opdrachten voor deze ronde konden niet worden geladen.");
+  }
+
+  return formatAssignments((data ?? []) as AssignmentRow[]);
 }
 
 export async function getProverbs(supabase: SupabaseClient): Promise<ProverbRow[]> {
@@ -365,7 +456,17 @@ export async function insertVote(params: {
 }
 
 export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminSnapshot> {
-  const [gameState, teams] = await Promise.all([getGameState(supabase), getTeams(supabase)]);
+  const [gameState, teams, rounds] = await Promise.all([
+    getGameState(supabase),
+    getTeams(supabase),
+    getRounds(supabase)
+  ]);
+  const currentRound = gameState.current_round_id
+    ? rounds.find((round) => round.id === gameState.current_round_id) ?? null
+    : null;
+  const assignments = currentRound
+    ? await getAssignmentsForRound(supabase, currentRound.id)
+    : [];
 
   const { data: submissions, error } = await supabase
     .from("submissions")
@@ -444,6 +545,9 @@ export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminS
   return {
     gameState,
     teams,
+    rounds,
+    currentRound,
+    assignments,
     progress,
     submissions: formattedSubmissions,
     winner
@@ -516,6 +620,7 @@ export async function resetGameRound(
     .from("game_state")
     .update({
       phase: "waiting",
+      current_round_id: null,
       upload_ends_at: new Date(Date.now() + uploadMinutes * 60_000).toISOString(),
       voting_ends_at: new Date(Date.now() + votingMinutes * 60_000).toISOString()
     })

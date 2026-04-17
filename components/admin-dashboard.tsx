@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -124,7 +124,7 @@ export function AdminDashboard() {
     );
   }, [proverbQuery, proverbs]);
 
-  async function updateState(phase: GameState["phase"]) {
+  async function updateState(phase: GameState["phase"], currentRoundId?: string | null) {
     setSavingState(true);
     setError(null);
     setSuccess(null);
@@ -136,6 +136,7 @@ export function AdminDashboard() {
       body: JSON.stringify({
         action: "set-phase",
         phase,
+        currentRoundId: currentRoundId ?? null,
         uploadMinutes,
         votingMinutes
       })
@@ -149,6 +150,22 @@ export function AdminDashboard() {
     setSnapshot(payload);
     setSavingState(false);
   }
+
+  const currentRoundProgress = useMemo(() => {
+    if (!snapshot?.currentRound) {
+      return [];
+    }
+
+    return snapshot.teams.map((team) => {
+      const teamAssignments = snapshot.assignments.filter((assignment) => assignment.team_id === team.id);
+      return {
+        teamId: team.id,
+        teamName: team.name,
+        uploaded: teamAssignments.filter((assignment) => assignment.is_uploaded).length,
+        total: teamAssignments.length
+      };
+    });
+  }, [snapshot]);
 
   async function toggleOverride(voteId: string, isCorrect: boolean) {
     const response = await fetch("/api/admin/override", {
@@ -340,6 +357,9 @@ export function AdminDashboard() {
             <p className="mt-2 text-2xl font-black capitalize text-ink">
               {snapshot?.gameState.phase ?? "laden"}
             </p>
+            <p className="mt-2 text-sm font-semibold text-slate-600">
+              {snapshot?.currentRound ? snapshot.currentRound.title : "Nog geen actieve ronde gekozen"}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -370,7 +390,40 @@ export function AdminDashboard() {
           </div>
 
           <div className="grid gap-2">
-            {(["waiting", "upload", "voting", "results"] as const).map((phase) => (
+            <button
+              className={`w-full rounded-3xl px-4 py-4 text-base font-black transition ${
+                snapshot?.gameState.phase === "waiting"
+                  ? "bg-ink text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+              disabled={savingState}
+              type="button"
+              onClick={() => {
+                updateState("waiting", snapshot?.gameState.current_round_id ?? null).catch(() => undefined);
+              }}
+            >
+              Zet fase op wacht op de start
+            </button>
+
+            {snapshot?.rounds.map((round) => (
+              <button
+                key={round.id}
+                className={`w-full rounded-3xl px-4 py-4 text-base font-black transition ${
+                  snapshot?.gameState.phase === "upload" && snapshot?.currentRound?.id === round.id
+                    ? "bg-ink text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+                disabled={savingState}
+                type="button"
+                onClick={() => {
+                  updateState("upload", round.id).catch(() => undefined);
+                }}
+              >
+                Open {round.title}
+              </button>
+            ))}
+
+            {(["voting", "results"] as const).map((phase) => (
               <button
                 key={phase}
                 className={`w-full rounded-3xl px-4 py-4 text-base font-black transition ${
@@ -381,12 +434,10 @@ export function AdminDashboard() {
                 disabled={savingState}
                 type="button"
                 onClick={() => {
-                  updateState(phase).catch(() => undefined);
+                  updateState(phase, snapshot?.gameState.current_round_id ?? null).catch(() => undefined);
                 }}
               >
-                {phase === "waiting"
-                  ? "Zet fase op wacht op de start"
-                  : `Zet fase op ${phase}`}
+                Zet fase op {phase}
               </button>
             ))}
           </div>
@@ -403,6 +454,53 @@ export function AdminDashboard() {
           </button>
         </div>
       </section>
+
+      {snapshot?.currentRound ? (
+        <section className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card">
+          <div>
+            <h2 className="text-lg font-black">Huidige ronde</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Live voortgang voor {snapshot.currentRound.title}. Elk team moet 2 opdrachten uploaden.
+            </p>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {currentRoundProgress.map((row) => (
+              <article key={row.teamId} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-base font-black text-ink">{row.teamName}</h3>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-600">
+                    {row.uploaded}/{row.total}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2">
+                  {snapshot.assignments
+                    .filter((assignment) => assignment.team_id === row.teamId)
+                    .sort((left, right) => left.slot - right.slot)
+                    .map((assignment) => (
+                      <div
+                        key={assignment.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-3 text-sm"
+                      >
+                        <span className="font-semibold text-slate-700">
+                          {assignment.slot}. {assignment.proverb_text}
+                        </span>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${
+                            assignment.is_uploaded
+                              ? "bg-teal/10 text-teal"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {assignment.is_uploaded ? "Binnen" : "Open"}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card">
         <div className="flex items-start justify-between gap-3">
@@ -436,7 +534,7 @@ export function AdminDashboard() {
         <div>
           <h2 className="text-lg font-black">Teamlinks voor spelpagina</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Elk team krijgt één eigen QR-code. Diezelfde pagina wisselt automatisch tussen uploaden, stemmen en resultaten.
+            Elk team krijgt een eigen QR-code. Diezelfde pagina wisselt automatisch tussen uploaden, stemmen en resultaten.
           </p>
         </div>
         <label className="mt-4 block">
@@ -619,3 +717,4 @@ export function AdminDashboard() {
     </MobileShell>
   );
 }
+

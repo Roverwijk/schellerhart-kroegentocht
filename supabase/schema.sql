@@ -47,8 +47,26 @@ create table if not exists public.proverbs (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.rounds (
+  id uuid primary key default gen_random_uuid(),
+  number integer not null unique,
+  title text not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.assignments (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references public.rounds(id) on delete cascade,
+  team_id uuid not null references public.teams(id) on delete cascade,
+  proverb_id uuid not null references public.proverbs(id) on delete restrict,
+  slot integer not null check (slot in (1, 2)),
+  created_at timestamptz not null default timezone('utc', now()),
+  constraint assignments_round_team_slot_key unique (round_id, team_id, slot)
+);
+
 create table if not exists public.submissions (
   id uuid primary key default gen_random_uuid(),
+  assignment_id uuid null references public.assignments(id) on delete cascade,
   team_id uuid not null references public.teams(id) on delete cascade,
   proverb_id uuid not null references public.proverbs(id) on delete restrict,
   photo_path text not null,
@@ -72,15 +90,19 @@ create table if not exists public.votes (
 
 create table if not exists public.game_state (
   id text primary key default 'singleton' check (id = 'singleton'),
-  phase game_phase not null default 'upload',
+  phase game_phase not null default 'waiting',
+  current_round_id uuid null references public.rounds(id) on delete set null,
   upload_ends_at timestamptz null,
   voting_ends_at timestamptz null,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create index if not exists assignments_round_id_idx on public.assignments(round_id);
+create index if not exists assignments_team_id_idx on public.assignments(team_id);
 create index if not exists submissions_team_id_idx on public.submissions(team_id);
 create index if not exists submissions_created_at_idx on public.submissions(created_at);
+create unique index if not exists submissions_assignment_id_key on public.submissions(assignment_id) where assignment_id is not null;
 create index if not exists votes_submission_id_idx on public.votes(submission_id);
 create index if not exists votes_team_id_idx on public.votes(team_id);
 create index if not exists proverbs_normalized_text_idx on public.proverbs(normalized_text);
@@ -108,6 +130,8 @@ on conflict (id) do nothing;
 
 alter table public.teams enable row level security;
 alter table public.proverbs enable row level security;
+alter table public.rounds enable row level security;
+alter table public.assignments enable row level security;
 alter table public.submissions enable row level security;
 alter table public.votes enable row level security;
 alter table public.game_state enable row level security;
@@ -122,6 +146,20 @@ using (true);
 drop policy if exists "public can read proverbs" on public.proverbs;
 create policy "public can read proverbs"
 on public.proverbs
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "public can read rounds" on public.rounds;
+create policy "public can read rounds"
+on public.rounds
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "public can read assignments" on public.assignments;
+create policy "public can read assignments"
+on public.assignments
 for select
 to anon, authenticated
 using (true);

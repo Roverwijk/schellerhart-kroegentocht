@@ -1,10 +1,54 @@
-﻿insert into public.teams (name, slug)
+﻿create table if not exists public.rounds (
+  id uuid primary key default gen_random_uuid(),
+  number integer not null unique,
+  title text not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.assignments (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references public.rounds(id) on delete cascade,
+  team_id uuid not null references public.teams(id) on delete cascade,
+  proverb_id uuid not null references public.proverbs(id) on delete restrict,
+  slot integer not null check (slot in (1, 2)),
+  created_at timestamptz not null default timezone('utc', now()),
+  constraint assignments_round_team_slot_key unique (round_id, team_id, slot)
+);
+
+alter table public.game_state
+add column if not exists current_round_id uuid null references public.rounds(id) on delete set null;
+
+alter table public.submissions
+add column if not exists assignment_id uuid null references public.assignments(id) on delete cascade;
+
+create index if not exists assignments_round_id_idx on public.assignments(round_id);
+create index if not exists assignments_team_id_idx on public.assignments(team_id);
+create unique index if not exists submissions_assignment_id_key on public.submissions(assignment_id) where assignment_id is not null;
+
+alter table public.rounds enable row level security;
+alter table public.assignments enable row level security;
+
+drop policy if exists "public can read rounds" on public.rounds;
+create policy "public can read rounds"
+on public.rounds
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "public can read assignments" on public.assignments;
+create policy "public can read assignments"
+on public.assignments
+for select
+to anon, authenticated
+using (true);
+
+insert into public.rounds (number, title)
 values
-  ('Team Rood', 'team-rood'),
-  ('Team Blauw', 'team-blauw'),
-  ('Team Groen', 'team-groen'),
-  ('Team Geel', 'team-geel')
-on conflict (slug) do nothing;
+  (1, 'Ronde 1'),
+  (2, 'Ronde 2'),
+  (3, 'Ronde 3')
+on conflict (number) do update
+set title = excluded.title;
 
 insert into public.proverbs (canonical_text, normalized_text)
 values
@@ -33,14 +77,6 @@ values
   ('In iemands vaarwater zitten', public.normalize_phrase('In iemands vaarwater zitten')),
   ('Een loden pijp hebben', public.normalize_phrase('Een loden pijp hebben'))
 on conflict (normalized_text) do nothing;
-
-insert into public.rounds (number, title)
-values
-  (1, 'Ronde 1'),
-  (2, 'Ronde 2'),
-  (3, 'Ronde 3')
-on conflict (number) do update
-set title = excluded.title;
 
 with assignment_source as (
   select *
@@ -88,7 +124,5 @@ set proverb_id = excluded.proverb_id;
 update public.game_state
 set
   phase = 'waiting',
-  current_round_id = null,
-  upload_ends_at = timezone('utc', now()) + interval '20 minutes',
-  voting_ends_at = timezone('utc', now()) + interval '45 minutes'
+  current_round_id = null
 where id = 'singleton';

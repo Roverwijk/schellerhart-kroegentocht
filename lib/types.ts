@@ -10,10 +10,30 @@ export type Team = {
 export type GameState = {
   id: string;
   phase: Phase;
+  current_round_id: string | null;
   upload_ends_at: string | null;
   voting_ends_at: string | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type Round = {
+  id: string;
+  number: number;
+  title: string;
+  created_at?: string;
+};
+
+export type TeamAssignment = {
+  id: string;
+  round_id: string;
+  team_id: string;
+  slot: number;
+  proverb_id: string;
+  proverb_text: string;
+  submission_id: string | null;
+  photo_url: string | null;
+  is_uploaded: boolean;
 };
 
 export type ProverbSuggestion = {
@@ -90,6 +110,9 @@ export type AdminSubmissionRow = {
 export type AdminSnapshot = {
   gameState: GameState;
   teams: Team[];
+  rounds: Round[];
+  currentRound: Round | null;
+  assignments: TeamAssignment[];
   progress: TeamProgress[];
   submissions: AdminSubmissionRow[];
   winner: TeamProgress | null;

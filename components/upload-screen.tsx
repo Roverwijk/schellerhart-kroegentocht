@@ -1,19 +1,20 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MobileShell } from "@/components/mobile-shell";
-import { ProverbAutosuggest } from "@/components/proverb-autosuggest";
 import { TeamSelect } from "@/components/team-select";
 import { TimerPill } from "@/components/timer-pill";
 import { createBrowserRealtimeClient } from "@/lib/supabase/browser";
 import { isInputClosed } from "@/lib/time";
-import type { GameState, ProverbSuggestion, Team } from "@/lib/types";
+import type { GameState, Round, Team, TeamAssignment } from "@/lib/types";
 
 type BootstrapResponse = {
   gameState: GameState;
   teams: Team[];
+  rounds: Round[];
+  currentRound: Round | null;
+  assignments: TeamAssignment[];
 };
 
 type UploadScreenProps = {
@@ -23,14 +24,19 @@ type UploadScreenProps = {
 export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [currentRound, setCurrentRound] = useState<Round | null>(null);
+  const [assignments, setAssignments] = useState<TeamAssignment[]>([]);
   const [teamId, setTeamId] = useState("");
-  const [proverb, setProverb] = useState("");
-  const [selectedProverb, setSelectedProverb] = useState<ProverbSuggestion | null>(null);
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Record<string, File | null>>({});
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const previewUrlsRef = useRef<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    previewUrlsRef.current = previewUrls;
+  }, [previewUrls]);
 
   useEffect(() => {
     let active = true;
@@ -43,6 +49,8 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
       }
       setTeams(payload.teams);
       setGameState(payload.gameState);
+      setCurrentRound(payload.currentRound);
+      setAssignments(payload.assignments);
 
       if (lockedTeamSlug) {
         const lockedTeam = payload.teams.find((team) => team.slug === lockedTeamSlug);
@@ -67,8 +75,8 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
           table: "game_state",
           filter: "id=eq.singleton"
         },
-        (payload) => {
-          setGameState(payload.new as GameState);
+        () => {
+          load().catch(() => undefined);
         }
       )
       .subscribe();
@@ -76,16 +84,9 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     return () => {
       active = false;
       supabase.removeChannel(channel);
+      Object.values(previewUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
     };
   }, [lockedTeamSlug]);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
 
   const lockedTeam = useMemo(
     () => teams.find((team) => team.id === teamId) ?? null,
@@ -97,24 +98,29 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     [gameState]
   );
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!photo) {
-      setError("Voeg een foto toe.");
+  const teamAssignments = useMemo(
+    () =>
+      assignments
+        .filter((assignment) => assignment.team_id === teamId)
+        .sort((left, right) => left.slot - right.slot),
+    [assignments, teamId]
+  );
+
+  async function uploadAssignment(assignment: TeamAssignment) {
+    const file = photos[assignment.id] ?? null;
+    if (!file) {
+      setError("Kies eerst een foto voor deze opdracht.");
       return;
     }
 
-    setSubmitting(true);
+    setSubmittingId(assignment.id);
     setError(null);
     setMessage(null);
 
     const formData = new FormData();
     formData.set("teamId", teamId);
-    formData.set("proverb", proverb);
-    formData.set("photo", photo);
-    if (selectedProverb) {
-      formData.set("selectedProverbId", selectedProverb.id);
-    }
+    formData.set("assignmentId", assignment.id);
+    formData.set("photo", file);
 
     const response = await fetch("/api/upload", {
       method: "POST",
@@ -127,19 +133,27 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
 
     if (!response.ok) {
       setError(payload.error ?? "Upload mislukt.");
-      setSubmitting(false);
+      setSubmittingId(null);
       return;
     }
 
-    setMessage(`Upload gelukt. Opgeslagen als: ${payload.canonicalProverb}`);
-    setProverb("");
-    setSelectedProverb(null);
-    setPhoto(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+    setMessage(`Upload gelukt voor opdracht ${assignment.slot}: ${payload.canonicalProverb}`);
+    if (previewUrls[assignment.id]) {
+      URL.revokeObjectURL(previewUrls[assignment.id]);
     }
-    setPreviewUrl(null);
-    setSubmitting(false);
+    setPreviewUrls((previous) => {
+      const next = { ...previous };
+      delete next[assignment.id];
+      return next;
+    });
+    setPhotos((previous) => ({ ...previous, [assignment.id]: null }));
+    setSubmittingId(null);
+
+    const refresh = await fetch("/api/bootstrap");
+    const nextPayload = (await refresh.json()) as BootstrapResponse;
+    setGameState(nextPayload.gameState);
+    setCurrentRound(nextPayload.currentRound);
+    setAssignments(nextPayload.assignments);
   }
 
   return (
@@ -147,12 +161,12 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
       title="Upload"
       phase={gameState?.phase ?? "waiting"}
       subtitle={
-        lockedTeamSlug
-          ? "Deze uploadlink hoort bij jouw team. Maak een foto en zet het juiste spreekwoord erbij."
-          : "Team kiest zichzelf, maakt een foto en zet het juiste spreekwoord erbij."
+        currentRound
+          ? `Ronde ${currentRound.number}: upload 2 foto's voor jullie vaste opdrachten.`
+          : "Deze teampagina staat klaar voor de volgende ronde."
       }
       actions={
-        gameState?.upload_ends_at ? (
+        gameState?.upload_ends_at && gameState.phase === "upload" ? (
           <TimerPill endsAt={gameState.upload_ends_at} label="Upload open" />
         ) : null
       }
@@ -164,61 +178,113 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
             Jullie team krijgt later 1 punt voor elke andere ploeg die deze foto goed raadt.
           </p>
         </div>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          {lockedTeamSlug ? (
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <span className="mb-2 block text-sm font-semibold text-slate-700">Team</span>
-              <p className="text-lg font-black text-ink">
-                {lockedTeam?.name ?? "Team laden..."}
-              </p>
-            </div>
-          ) : (
-            <TeamSelect disabled={submitting || closed} teams={teams} value={teamId} onChange={setTeamId} />
-          )}
 
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-slate-700">Foto</span>
-              <input
-                accept="image/*"
-                capture="environment"
-                className="block w-full rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:font-semibold file:text-white"
-                disabled={submitting || closed}
-                type="file"
-                onChange={(event) => {
-                  const nextFile = event.target.files?.[0] ?? null;
-                  setPhoto(nextFile);
-                  if (previewUrl) {
-                    URL.revokeObjectURL(previewUrl);
-                  }
-                  setPreviewUrl(nextFile ? URL.createObjectURL(nextFile) : null);
-                }}
-              />
-            </label>
-            {previewUrl ? (
-              <img
-                alt="Voorvertoning"
-                className="h-64 w-full rounded-4xl object-cover"
-                src={previewUrl}
-              />
-            ) : null}
+        {lockedTeamSlug ? (
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <span className="mb-2 block text-sm font-semibold text-slate-700">Team</span>
+            <p className="text-lg font-black text-ink">{lockedTeam?.name ?? "Team laden..."}</p>
           </div>
-
-          <ProverbAutosuggest
-            disabled={submitting || closed}
-            onCanonicalPick={setSelectedProverb}
-            onChange={setProverb}
-            value={proverb}
+        ) : (
+          <TeamSelect
+            disabled={Boolean(submittingId) || closed}
+            teams={teams}
+            value={teamId}
+            onChange={setTeamId}
           />
+        )}
 
-          <button
-            className="w-full rounded-3xl bg-accent px-4 py-4 text-base font-black text-white transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-slate-300"
-            disabled={submitting || closed || !teamId || !photo || !proverb.trim()}
-            type="submit"
-          >
-            {submitting ? "Bezig..." : "Verstuur upload"}
-          </button>
-        </form>
+        {currentRound ? (
+          <div className="mt-4 rounded-3xl bg-slate-100 px-4 py-4 text-sm text-slate-700">
+            <p className="font-black text-ink">{currentRound.title}</p>
+            <p className="mt-1">Per ronde heeft elk team precies 2 vaste spreekwoorden.</p>
+          </div>
+        ) : null}
+
+        <div className="mt-4 space-y-4">
+          {teamAssignments.map((assignment) => (
+            <article
+              key={assignment.id}
+              className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Opdracht {assignment.slot}
+                  </p>
+                  <h2 className="mt-2 text-lg font-black text-ink">
+                    {assignment.proverb_text}
+                  </h2>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
+                    assignment.is_uploaded ? "bg-teal/10 text-teal" : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {assignment.is_uploaded ? "Geupload" : "Open"}
+                </span>
+              </div>
+
+              {assignment.photo_url ? (
+                <img
+                  alt={`Laatste upload voor ${assignment.proverb_text}`}
+                  className="mt-4 h-48 w-full rounded-3xl object-cover"
+                  src={assignment.photo_url}
+                />
+              ) : null}
+
+              <label className="mt-4 block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Nieuwe foto</span>
+                <input
+                  accept="image/*"
+                  capture="environment"
+                  className="block w-full rounded-3xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:font-semibold file:text-white"
+                  disabled={Boolean(submittingId) || closed}
+                  type="file"
+                  onChange={(event) => {
+                    const nextFile = event.target.files?.[0] ?? null;
+                    if (previewUrls[assignment.id]) {
+                      URL.revokeObjectURL(previewUrls[assignment.id]);
+                    }
+                    setPhotos((previous) => ({ ...previous, [assignment.id]: nextFile }));
+                    setPreviewUrls((previous) => ({
+                      ...previous,
+                      [assignment.id]: nextFile ? URL.createObjectURL(nextFile) : ""
+                    }));
+                  }}
+                />
+              </label>
+
+              {previewUrls[assignment.id] ? (
+                <img
+                  alt="Voorvertoning"
+                  className="mt-4 h-48 w-full rounded-3xl object-cover"
+                  src={previewUrls[assignment.id]}
+                />
+              ) : null}
+
+              <button
+                className="mt-4 w-full rounded-3xl bg-accent px-4 py-4 text-base font-black text-white transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={!teamId || !photos[assignment.id] || Boolean(submittingId) || closed}
+                type="button"
+                onClick={() => {
+                  uploadAssignment(assignment).catch(() => undefined);
+                }}
+              >
+                {submittingId === assignment.id
+                  ? "Bezig..."
+                  : assignment.is_uploaded
+                    ? "Vervang upload"
+                    : "Upload foto"}
+              </button>
+            </article>
+          ))}
+
+          {teamId && teamAssignments.length === 0 ? (
+            <section className="rounded-4xl border border-slate-200 bg-white/85 p-4 text-sm text-slate-700 shadow-card">
+              Voor dit team staan in deze ronde nog geen opdrachten klaar.
+            </section>
+          ) : null}
+        </div>
       </section>
 
       {message ? (
@@ -236,8 +302,8 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
       {closed ? (
         <section className="rounded-4xl border border-slate-200 bg-white/85 p-4 text-sm text-slate-700 shadow-card">
           {gameState?.phase === "waiting"
-            ? "We wachten nog op de start. De admin zet het spel zo live."
-            : "De uploadfase is dicht. De admin kan de fase of timer aanpassen in het adminscherm."}
+            ? "We wachten nog op de start van de volgende ronde. De admin zet de uploadfase zo live."
+            : "De uploadfase is dicht. De admin kan de fase of ronde aanpassen in het adminscherm."}
         </section>
       ) : null}
     </MobileShell>

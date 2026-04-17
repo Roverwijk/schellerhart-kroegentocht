@@ -3,21 +3,24 @@ import { NextResponse } from "next/server";
 import {
   getGameState,
   phaseDeadlineExpired,
-  resolveCanonicalProverb,
   storeSubmissionPhoto
 } from "@/lib/game-service";
+import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const teamId = String(formData.get("teamId") ?? "");
-    const proverbInput = String(formData.get("proverb") ?? "");
-    const selectedProverbId = String(formData.get("selectedProverbId") ?? "") || null;
+    const assignmentId = String(formData.get("assignmentId") ?? "");
     const file = formData.get("photo");
 
     if (!teamId) {
       return NextResponse.json({ error: "Kies eerst een team." }, { status: 400 });
+    }
+
+    if (!assignmentId) {
+      return NextResponse.json({ error: "Kies eerst een opdracht." }, { status: 400 });
     }
 
     if (!(file instanceof File)) {
@@ -39,22 +42,77 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "De uploadfase is gesloten." }, { status: 409 });
     }
 
-    const proverb = await resolveCanonicalProverb(supabase, proverbInput, selectedProverbId);
-    const photo = await storeSubmissionPhoto(supabase, teamId, file);
-
-    const { data, error } = await supabase
-      .from("submissions")
-      .insert({
-        team_id: teamId,
-        proverb_id: proverb.id,
-        photo_path: photo.path,
-        photo_url: photo.url
-      })
-      .select("id")
+    const { data: assignment, error: assignmentError } = await supabase
+      .from("assignments")
+      .select(
+        `
+          id,
+          team_id,
+          round_id,
+          proverb_id,
+          proverb:proverbs!assignments_proverb_id_fkey(canonical_text),
+          submission:submissions(id, photo_path)
+        `
+      )
+      .eq("id", assignmentId)
       .single();
 
-    if (error || !data) {
-      throw new Error("Upload opslaan mislukte.");
+    if (assignmentError || !assignment) {
+      return NextResponse.json({ error: "Deze opdracht bestaat niet meer." }, { status: 404 });
+    }
+
+    if (assignment.team_id !== teamId) {
+      return NextResponse.json({ error: "Deze opdracht hoort niet bij dit team." }, { status: 409 });
+    }
+
+    if (!gameState.current_round_id || assignment.round_id !== gameState.current_round_id) {
+      return NextResponse.json({ error: "Deze opdracht hoort niet bij de actieve ronde." }, { status: 409 });
+    }
+
+    const photo = await storeSubmissionPhoto(supabase, teamId, file);
+    const existingSubmission = Array.isArray(assignment.submission)
+      ? assignment.submission[0] ?? null
+      : assignment.submission;
+
+    if (existingSubmission?.photo_path) {
+      await supabase.storage.from(env.storageBucket).remove([existingSubmission.photo_path]);
+    }
+
+    const proverb = Array.isArray(assignment.proverb) ? assignment.proverb[0] : assignment.proverb;
+    let data: { id: string } | null = null;
+
+    if (existingSubmission?.id) {
+      const { data: updated, error } = await supabase
+        .from("submissions")
+        .update({
+          photo_path: photo.path,
+          photo_url: photo.url
+        })
+        .eq("id", existingSubmission.id)
+        .select("id")
+        .single();
+
+      if (error || !updated) {
+        throw new Error("Upload bijwerken mislukte.");
+      }
+      data = updated;
+    } else {
+      const { data: inserted, error } = await supabase
+        .from("submissions")
+        .insert({
+          assignment_id: assignmentId,
+          team_id: teamId,
+          proverb_id: assignment.proverb_id,
+          photo_path: photo.path,
+          photo_url: photo.url
+        })
+        .select("id")
+        .single();
+
+      if (error || !inserted) {
+        throw new Error("Upload opslaan mislukte.");
+      }
+      data = inserted;
     }
 
     return NextResponse.json({

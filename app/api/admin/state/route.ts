@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       action?: "set-phase" | "reset";
       phase: "waiting" | "upload" | "voting" | "results";
+      currentRoundId?: string | null;
       uploadMinutes?: number;
       votingMinutes?: number;
     };
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
 
     const payload = {
       phase: body.phase,
+      current_round_id: body.currentRoundId ?? null,
       upload_ends_at: isoAfterMinutes(uploadMinutes),
       voting_ends_at: isoAfterMinutes(votingMinutes)
     };
