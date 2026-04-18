@@ -33,7 +33,7 @@ const phaseArtwork: Record<Phase, { src: string; alt: string; label: string }> =
   results: {
     src: `/nel/nel-f.png?v=${artworkVersion}`,
     alt: "Nel Bannink trekt een gek gezicht",
-    label: "Resultaten"
+  label: "Resultaten"
   }
 };
 
@@ -55,6 +55,40 @@ const roundUploadArtwork: Record<number, { src: string; alt: string; label: stri
   }
 };
 
+const phaseDrinkTips: Record<Phase, { drink: string; note: string }> = {
+  waiting: {
+    drink: "Texels Skuumkoppe",
+    note: "Rustig inkomen met een klassieker."
+  },
+  upload: {
+    drink: "Westmalle Dubbel",
+    note: "Vol van smaak, net als ronde 1."
+  },
+  voting: {
+    drink: "Delirium",
+    note: "Tijd om scherp te blijven tijdens het stemmen."
+  },
+  results: {
+    drink: "Glaasje water",
+    note: "Nel zegt: kampioenen hydrateren ook."
+  }
+};
+
+const roundUploadDrinkTips: Record<number, { drink: string; note: string }> = {
+  1: {
+    drink: "Westmalle Dubbel",
+    note: "Vol van smaak, net als ronde 1."
+  },
+  2: {
+    drink: "La Chouffe",
+    note: "Een vrolijke opsteker voor ronde 2."
+  },
+  3: {
+    drink: "Blauwe Handje",
+    note: "Lokaal karakter voor de laatste uploadronde."
+  }
+};
+
 export function MobileShell({
   title,
   subtitle,
@@ -65,6 +99,10 @@ export function MobileShell({
 }: MobileShellProps) {
   const artwork =
     phase === "upload" && roundNumber ? roundUploadArtwork[roundNumber] ?? phaseArtwork.upload : phaseArtwork[phase];
+  const drinkTip =
+    phase === "upload" && roundNumber
+      ? roundUploadDrinkTips[roundNumber] ?? phaseDrinkTips.upload
+      : phaseDrinkTips[phase];
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.2),_transparent_35%),linear-gradient(180deg,_#fff7ed_0%,_#f8fafc_42%,_#e2e8f0_100%)] px-4 py-6 text-ink">
@@ -97,6 +135,13 @@ export function MobileShell({
                 </p>
               </div>
             </div>
+          </div>
+          <div className="mt-3 rounded-3xl border border-amber-200 bg-[linear-gradient(135deg,_#fff7ed_0%,_#ffedd5_100%)] px-4 py-4 text-ink">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-dark">
+              Dranktip van Nel
+            </p>
+            <p className="mt-2 text-lg font-black">{drinkTip.drink}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-700">{drinkTip.note}</p>
           </div>
         </header>
         {children}
