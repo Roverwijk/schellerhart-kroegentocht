@@ -94,7 +94,12 @@ export function AdminDashboard() {
 
   const sortedProgress = useMemo(() => {
     return [...(snapshot?.progress ?? [])].sort((left, right) => {
-      return right.score - left.score || left.team_name.localeCompare(right.team_name);
+      return (
+        right.score - left.score ||
+        right.correct_votes_received - left.correct_votes_received ||
+        right.correct_guesses_made - left.correct_guesses_made ||
+        left.team_name.localeCompare(right.team_name)
+      );
     });
   }, [snapshot?.progress]);
 
@@ -166,6 +171,16 @@ export function AdminDashboard() {
       };
     });
   }, [snapshot]);
+
+  const roundWarnings = useMemo(() => {
+    if (!snapshot?.currentRound) {
+      return [];
+    }
+
+    return currentRoundProgress
+      .filter((row) => row.uploaded < row.total)
+      .map((row) => `${row.teamName}: ${row.uploaded}/${row.total} uploads binnen`);
+  }, [currentRoundProgress, snapshot?.currentRound]);
 
   async function toggleOverride(voteId: string, isCorrect: boolean) {
     const response = await fetch("/api/admin/override", {
@@ -293,6 +308,9 @@ export function AdminDashboard() {
             <h2 className="mt-2 text-2xl font-black text-ink">Scorebord</h2>
             <p className="mt-1 text-sm text-slate-600">
               Meteen zichtbaar op mobiel wie voorstaat en wie wint.
+            </p>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Tie-breaker: maker-punten, daarna raad-punten
             </p>
           </div>
           <div className="rounded-3xl bg-white/90 px-4 py-3 text-right shadow-sm">
@@ -464,6 +482,20 @@ export function AdminDashboard() {
               Live voortgang voor {snapshot.currentRound.title}. Elk team moet 2 opdrachten uploaden.
             </p>
           </div>
+          {roundWarnings.length > 0 ? (
+            <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              <p className="font-black">Nog niet compleet</p>
+              <div className="mt-2 grid gap-1">
+                {roundWarnings.map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-3xl border border-teal/20 bg-teal/10 p-4 text-sm font-semibold text-teal">
+              Alle teams hebben hun uploads voor deze ronde binnen.
+            </div>
+          )}
           <div className="mt-4 grid gap-3">
             {currentRoundProgress.map((row) => (
               <article key={row.teamId} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">

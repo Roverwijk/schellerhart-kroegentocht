@@ -539,8 +539,13 @@ export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminS
   });
 
   const winner =
-    [...progress].sort((left, right) => right.score - left.score || left.team_name.localeCompare(right.team_name))[0] ??
-    null;
+    [...progress].sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.correct_votes_received - left.correct_votes_received ||
+        right.correct_guesses_made - left.correct_guesses_made ||
+        left.team_name.localeCompare(right.team_name)
+    )[0] ?? null;
 
   return {
     gameState,

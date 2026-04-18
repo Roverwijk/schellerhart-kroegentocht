@@ -42,6 +42,13 @@ export async function POST(request: Request) {
     const votingMinutes = Math.max(1, Number(body.votingMinutes ?? 20));
     const supabase = createServiceClient();
 
+    if (body.action !== "reset" && body.phase === "upload" && !body.currentRoundId) {
+      return NextResponse.json(
+        { error: "Kies eerst een ronde voordat je de uploadfase opent." },
+        { status: 400 }
+      );
+    }
+
     if (body.action === "reset") {
       await resetGameRound(supabase, {
         uploadMinutes,

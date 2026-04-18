@@ -1,6 +1,6 @@
-# Kroegentocht Spreekwoorden
+﻿# Kroegentocht Spreekwoorden
 
-Mobiele realtime webapp voor een kroegentochtspel met 4 teams. Teams uploaden foto's van uitgebeelde spreekwoorden, andere teams raden die foto's tijdens de stemfase, en de admin beheert fases, timers, correcties en eindscore.
+Mobiele realtime webapp voor een kroegentochtspel met 4 teams. Elk team gebruikt een vaste teamlink, speelt 3 uploadrondes met 2 vaste spreekwoorden per ronde, en stemt daarna op de foto's van de andere teams.
 
 ## Stack
 
@@ -14,17 +14,14 @@ Mobiele realtime webapp voor een kroegentochtspel met 4 teams. Teams uploaden fo
 
 ## Functies
 
-- `/upload`: team kiest naam, uploadt foto en vult spreekwoord in met autosuggest
-- `/vote`: team stemt mobiel per foto, ziet voortgang en timer, en krijgt na afloop een overzicht met goed/fout
-- `/admin`: fasebeheer, countdowns, live voortgang, score-overzicht, overrides en canonical spreekwoorden
-- Normalisatie van vrije tekst:
-  - lowercase
-  - trimmen
-  - dubbele spaties verwijderen
-  - leestekens verwijderen
-- Fuzzy suggesties op basis van bestaande spreekwoorden
-- Centrale game state in de database
+- `/upload/[teamSlug]`: vaste teampagina die automatisch wisselt tussen wachten, uploaden, stemmen en resultaten
+- `/vote`: losse stempagina voor testen of handmatig gebruik
+- `/admin`: fasebeheer, rondes, countdowns, live voortgang, score-overzicht, overrides en canonical spreekwoorden
+- 3 uploadrondes met per team 2 vaste spreekwoorden per ronde
+- Centrale game state in de database met actieve ronde
 - Invoer stopt automatisch zodra deadlines verlopen
+- Fuzzy suggesties op basis van bestaande spreekwoorden tijdens stemmen
+- Resetknop voor nieuwe speelrondes, inclusief verwijderen van geuploade foto's
 
 ## Lokale installatie
 
@@ -46,6 +43,7 @@ cp .env.local.example .env.local
    - Open de SQL Editor
    - Draai eerst [schema.sql](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase/schema.sql)
    - Draai daarna [seed.sql](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase/seed.sql)
+   - Gebruik voor bestaande projecten ook [add-rounds-and-assignments.sql](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase/add-rounds-and-assignments.sql)
 
 5. Start lokaal:
 
@@ -54,7 +52,8 @@ npm run dev
 ```
 
 6. Open:
-   - `http://localhost:3000/upload`
+   - `http://localhost:3000/upload/team-rood`
+   - `http://localhost:3000/upload/team-blauw`
    - `http://localhost:3000/vote`
    - `http://localhost:3000/admin`
 
@@ -64,6 +63,8 @@ npm run dev
 
 - `teams`
 - `proverbs`
+- `rounds`
+- `assignments`
 - `submissions`
 - `votes`
 - `game_state`
@@ -81,13 +82,16 @@ npm run dev
 
 ## Spelregels in de app
 
+- Elk team gebruikt 1 vaste QR-code / teamlink
+- De admin opent upload per ronde
+- Per ronde heeft elk team precies 2 vaste spreekwoorden
 - Alleen uploaden tijdens fase `upload`
 - Alleen stemmen tijdens fase `voting`
 - Bij verlopen deadline blokkeert invoer automatisch
 - Een team kan niet op zijn eigen submission stemmen
-- Per submission kan elk team maar één stem uitbrengen
+- Per submission kan elk team maar 1 stem uitbrengen
 - Correcte stemmen leveren 1 punt op voor het makersteam van die foto
-- Stemteam krijgt zelf geen punten
+- Het stemmende team krijgt zelf ook 1 punt bij een correct antwoord
 - Admin kan antwoordbeoordelingen handmatig overriden
 
 ## Projectstructuur
@@ -95,7 +99,7 @@ npm run dev
 - [app](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/app) - routes en API handlers
 - [components](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/components) - mobiele UI componenten
 - [lib](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/lib) - domeinlogica, Supabase helpers en normalisatie
-- [supabase](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase) - schema en seed scripts
+- [supabase](/C:/Users/roverwijk/OneDrive - Deltion College/Documenten/Codex/supabase) - schema, seeds en migratiescripts
 
 ## Vercel deploy
 
@@ -109,7 +113,7 @@ npm run dev
    - `ADMIN_PASSCODE`
 4. Deploy het project.
 5. Controleer na deploy:
-   - upload werkt op mobiel
+   - teamlinks werken op mobiel
    - foto's verschijnen in storage
    - fasewissels updaten direct
    - stemmen en scoretelling lopen correct
