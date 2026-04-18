@@ -235,10 +235,10 @@ function LockedVoteStage({ team }: { team: Team }) {
                     key={item.submission_id}
                     className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${
                       index === currentIndex
-                        ? "bg-ink text-white"
+                        ? "border-2 border-amber-300 bg-ink text-white shadow-[0_0_0_3px_rgba(251,191,36,0.25)]"
                         : item.is_answered
-                          ? "bg-teal/10 text-teal"
-                          : "bg-slate-100 text-slate-600"
+                          ? "border border-teal/30 bg-teal text-white"
+                          : "border-2 border-rose-300 bg-white text-berry"
                     }`}
                     type="button"
                     onClick={() => setCurrentIndex(index)}
@@ -250,6 +250,20 @@ function LockedVoteStage({ team }: { team: Team }) {
               <p className="text-sm font-semibold text-slate-500">
                 {completed} van {total} foto&apos;s hebben al een opgeslagen antwoord.
               </p>
+              <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600">
+                <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                  <span className="h-3 w-3 rounded-full border-2 border-rose-300 bg-white" />
+                  Open
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                  <span className="h-3 w-3 rounded-full border border-teal/30 bg-teal" />
+                  Opgeslagen
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                  <span className="h-3 w-3 rounded-full border-2 border-amber-300 bg-ink" />
+                  Huidig
+                </div>
+              </div>
             </>
           ) : null}
 
