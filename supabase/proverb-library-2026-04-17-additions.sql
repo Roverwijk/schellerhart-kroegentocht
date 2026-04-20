@@ -39,6 +39,7 @@ values
   ('Op een droogje zitten', public.normalize_phrase('Op een droogje zitten')),
   ('De gifbeker leegdrinken', public.normalize_phrase('De gifbeker leegdrinken')),
   ('Iemand onder de tafel drinken', public.normalize_phrase('Iemand onder de tafel drinken')),
-  ('Dat scheelt een slok op een borrel', public.normalize_phrase('Dat scheelt een slok op een borrel'))
+  ('Dat scheelt een slok op een borrel', public.normalize_phrase('Dat scheelt een slok op een borrel')),
+  ('Hand in eigen boezem steken', public.normalize_phrase('Hand in eigen boezem steken'))
 on conflict (normalized_text) do nothing;
 
