@@ -10,25 +10,25 @@ const challenges: JubileeChallenge[] = [
   {
     title: "Online pubquiz corona",
     story:
-      "Tijdens **corona** zat iedereen thuis, maar de lol ging gewoon door met een fanatieke **online** **pubquiz** aan de keukentafel.",
+      "Tijdens **corona** moesten we allemaal thuis blijven, maar samen organiseerden we verschillende leuke activiteiten, waaronder een hilarische **online** **pubquiz** aan de keukentafel.",
     keywords: ["online", "pubquiz", "corona"]
   },
   {
     title: "WK kelder Hans",
     story:
-      "Bij **Hans** in de **kelder** werd een legendarische **WK**-avond beleefd met spanning, gejuich en veel te fanatieke analyses.",
+      "Tijdens diverse **WK**-wedstrijden waren we allemaal welkom bij **Hans** en Anja. Bij hen in de **kelder** beleefden we legendarische avonden met spanning, gejuich en veel te fanatieke analyses.",
     keywords: ["wk", "kelder", "hans"]
   },
   {
     title: "Adoptie buurttuin burendag",
     story:
-      "Tijdens **burendag** stak Schellerhart de handen uit de mouwen na de **adoptie** van de **buurttuin**, met gezelligheid tussendoor.",
+      "Tijdens **burendag** staken we de handen uit de mouwen na de **adoptie** van de gemeentestrook; door gezelligheid, koffie en koeken ontstond een prachtige **buurttuin**.",
     keywords: ["adoptie", "buurttuin", "burendag"]
   },
   {
     title: "Graffiti workshop borden",
     story:
-      "Tijdens een creatieve **graffiti** **workshop** veranderden gewone **borden** in een vrolijke Schellerhart-chaos vol kleur.",
+      "Tijdens NL-doet volgden we een creatieve **graffiti** **workshop** en veranderden gewone **borden** in kunst. De gemaakte werken gaven Schellerhart nog meer kleur.",
     keywords: ["graffiti", "workshop", "borden"]
   }
 ];
