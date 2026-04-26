@@ -36,10 +36,13 @@ values
   ('Wie de bal kaatst, kan hem terugverwachten', public.normalize_phrase('Wie de bal kaatst, kan hem terugverwachten')),
   ('Achter de wolken schijnt de zon', public.normalize_phrase('Achter de wolken schijnt de zon')),
   ('Het bloed kruipt waar het niet gaan kan', public.normalize_phrase('Het bloed kruipt waar het niet gaan kan')),
+  ('Het glas is halfvol', public.normalize_phrase('Het glas is halfvol')),
+  ('Een fles soldaat maken', public.normalize_phrase('Een fles soldaat maken')),
   ('Op een droogje zitten', public.normalize_phrase('Op een droogje zitten')),
   ('De gifbeker leegdrinken', public.normalize_phrase('De gifbeker leegdrinken')),
   ('Iemand onder de tafel drinken', public.normalize_phrase('Iemand onder de tafel drinken')),
   ('Dat scheelt een slok op een borrel', public.normalize_phrase('Dat scheelt een slok op een borrel')),
+  ('Een afzakkertje nemen', public.normalize_phrase('Een afzakkertje nemen')),
   ('Hand in eigen boezem steken', public.normalize_phrase('Hand in eigen boezem steken'))
 on conflict (normalized_text) do nothing;
 
