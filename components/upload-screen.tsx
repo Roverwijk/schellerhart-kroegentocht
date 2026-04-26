@@ -21,6 +21,11 @@ type UploadScreenProps = {
   lockedTeamSlug?: string;
 };
 
+function cacheBust(url: string): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}_=${Date.now()}`;
+}
+
 export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -42,7 +47,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     let active = true;
 
     async function load() {
-      const response = await fetch("/api/bootstrap", { cache: "no-store" });
+      const response = await fetch(cacheBust("/api/bootstrap"), { cache: "no-store" });
       const payload = (await response.json()) as BootstrapResponse;
       if (!active) {
         return;
@@ -149,7 +154,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     setPhotos((previous) => ({ ...previous, [assignment.id]: null }));
     setSubmittingId(null);
 
-    const refresh = await fetch("/api/bootstrap", { cache: "no-store" });
+    const refresh = await fetch(cacheBust("/api/bootstrap"), { cache: "no-store" });
     const nextPayload = (await refresh.json()) as BootstrapResponse;
     setGameState(nextPayload.gameState);
     setCurrentRound(nextPayload.currentRound);
