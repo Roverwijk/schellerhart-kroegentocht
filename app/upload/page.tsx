@@ -1,5 +1,5 @@
-import { UploadScreen } from "@/components/upload-screen";
+import { PublicLobbyScreen } from "@/components/public-lobby-screen";
 
 export default function UploadPage() {
-  return <UploadScreen />;
+  return <PublicLobbyScreen />;
 }
