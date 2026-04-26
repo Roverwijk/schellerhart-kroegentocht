@@ -8,6 +8,9 @@ import {
 } from "@/lib/game-service";
 import { createServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const teamId = request.nextUrl.searchParams.get("teamId");
@@ -23,16 +26,23 @@ export async function GET(request: NextRequest) {
         ? await listVoteReviewForTeam(supabase, teamId)
         : [];
 
-    return NextResponse.json({
-      gameState,
-      items: queue.items,
-      current: queue.current,
-      currentIndex: queue.currentIndex,
-      total: queue.total,
-      completed: queue.completed,
-      closed: gameState.phase !== "voting" || phaseDeadlineExpired(gameState),
-      review
-    });
+    return NextResponse.json(
+      {
+        gameState,
+        items: queue.items,
+        current: queue.current,
+        currentIndex: queue.currentIndex,
+        total: queue.total,
+        completed: queue.completed,
+        closed: gameState.phase !== "voting" || phaseDeadlineExpired(gameState),
+        review
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        }
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Onbekende fout." },

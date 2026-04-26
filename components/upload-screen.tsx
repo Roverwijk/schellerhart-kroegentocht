@@ -42,7 +42,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     let active = true;
 
     async function load() {
-      const response = await fetch("/api/bootstrap");
+      const response = await fetch("/api/bootstrap", { cache: "no-store" });
       const payload = (await response.json()) as BootstrapResponse;
       if (!active) {
         return;
@@ -149,7 +149,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     setPhotos((previous) => ({ ...previous, [assignment.id]: null }));
     setSubmittingId(null);
 
-    const refresh = await fetch("/api/bootstrap");
+    const refresh = await fetch("/api/bootstrap", { cache: "no-store" });
     const nextPayload = (await refresh.json()) as BootstrapResponse;
     setGameState(nextPayload.gameState);
     setCurrentRound(nextPayload.currentRound);

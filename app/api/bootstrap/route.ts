@@ -8,6 +8,9 @@ import {
 } from "@/lib/game-service";
 import { createServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const supabase = createServiceClient();
@@ -23,7 +26,14 @@ export async function GET() {
       ? await getAssignmentsForRound(supabase, currentRound.id)
       : [];
 
-    return NextResponse.json({ gameState, teams, rounds, currentRound, assignments });
+    return NextResponse.json(
+      { gameState, teams, rounds, currentRound, assignments },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        }
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Onbekende fout." },

@@ -74,7 +74,7 @@ function LockedVoteStage({ team }: { team: Team }) {
     let active = true;
 
     async function refresh(preferredIndex?: number) {
-      const response = await fetch(`/api/vote/next?teamId=${team.id}`);
+      const response = await fetch(`/api/vote/next?teamId=${team.id}`, { cache: "no-store" });
       const payload = (await response.json()) as VotePayload & { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Stemstatus laden mislukte.");
@@ -186,7 +186,7 @@ function LockedVoteStage({ team }: { team: Team }) {
     });
     setSubmitting(false);
 
-    const refresh = await fetch(`/api/vote/next?teamId=${team.id}`);
+    const refresh = await fetch(`/api/vote/next?teamId=${team.id}`, { cache: "no-store" });
     const nextPayload = (await refresh.json()) as VotePayload;
     setGameState(nextPayload.gameState);
     setItems(nextPayload.items);
@@ -407,7 +407,7 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
     let active = true;
 
     async function load() {
-      const response = await fetch("/api/bootstrap");
+      const response = await fetch("/api/bootstrap", { cache: "no-store" });
       const payload = (await response.json()) as BootstrapResponse & { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Teampagina laden mislukte.");
