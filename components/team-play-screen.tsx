@@ -408,7 +408,10 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
 
     async function load() {
       const response = await fetch("/api/bootstrap");
-      const payload = (await response.json()) as BootstrapResponse;
+      const payload = (await response.json()) as BootstrapResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Teampagina laden mislukte.");
+      }
       if (!active) {
         return;
       }
@@ -419,6 +422,7 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
         return;
       }
 
+      setError(null);
       setTeam(lockedTeam);
       setGameState(payload.gameState);
     }
@@ -436,14 +440,19 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
           table: "game_state",
           filter: "id=eq.singleton"
         },
-        (payload) => {
-          setGameState(payload.new as GameState);
+        () => {
+          load().catch(() => setError("Teampagina laden mislukte."));
         }
       )
       .subscribe();
 
+    const interval = window.setInterval(() => {
+      load().catch(() => undefined);
+    }, 15_000);
+
     return () => {
       active = false;
+      window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [teamSlug]);
