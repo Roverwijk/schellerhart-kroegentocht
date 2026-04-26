@@ -6,7 +6,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { ProverbAutosuggest } from "@/components/proverb-autosuggest";
 import { TimerPill } from "@/components/timer-pill";
 import { UploadScreen } from "@/components/upload-screen";
-import { formatJubileeKeywords, getJubileeChallenge } from "@/lib/jubilee";
+import { formatJubileeKeywords, getJubileeChallenge, maskJubileeStory } from "@/lib/jubilee";
 import { createBrowserRealtimeClient } from "@/lib/supabase/browser";
 import type {
   GameState,
@@ -318,12 +318,12 @@ function LockedVoteStage({ team }: { team: Team }) {
                 <div className="space-y-3">
                   <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-slate-700">
                     <p className="font-black text-ink">Jubileumsituatie</p>
-                    <p className="mt-2 leading-6">{jubileeChallenge.story}</p>
+                    <p className="mt-2 leading-6">
+                      {maskJubileeStory(jubileeChallenge.story, jubileeChallenge.keywords)}
+                    </p>
                     <p className="mt-3 font-semibold">
-                      Typ de 3 steekwoorden, bijvoorbeeld:{" "}
-                      <span className="font-black text-ink">
-                        {formatJubileeKeywords(jubileeChallenge.keywords)}
-                      </span>
+                      Typ de 3 steekwoorden:{" "}
+                      <span className="font-black text-ink">....., ....., .....</span>
                     </p>
                   </div>
                   <label className="block">
@@ -333,7 +333,7 @@ function LockedVoteStage({ team }: { team: Team }) {
                     <input
                       className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-base text-ink"
                       disabled={submitting}
-                      placeholder="Bijv. online, pubquiz, corona"
+                      placeholder="Bijv. ....., ....., ....."
                       type="text"
                       value={guess}
                       onChange={(event) =>

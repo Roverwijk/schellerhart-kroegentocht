@@ -1,6 +1,6 @@
 import { canonicalizeText, normalizeText } from "@/lib/text";
 
-type JubileeChallenge = {
+export type JubileeChallenge = {
   title: string;
   story: string;
   keywords: [string, string, string];
@@ -10,25 +10,25 @@ const challenges: JubileeChallenge[] = [
   {
     title: "Online pubquiz corona",
     story:
-      "Tijdens de coronatijd zat iedereen thuis, maar Schellerhart liet zich niet uit het veld slaan. Met drankjes binnen handbereik en fanatieke blikken op het scherm werd er vanuit huis fanatiek meegedaan aan een gezellige online pubquiz.",
+      "Tijdens **corona** zat iedereen thuis, maar de lol ging gewoon door met een fanatieke **online** **pubquiz** aan de keukentafel.",
     keywords: ["online", "pubquiz", "corona"]
   },
   {
     title: "WK kelder Hans",
     story:
-      "Bij Hans in de kelder werd een WK-avond legendarisch: spanning voor de wedstrijd, volle glazen, luid gejuich en net iets te veel fanatisme maakten het tot zo'n avond waar nog vaak over gepraat wordt.",
+      "Bij **Hans** in de **kelder** werd een legendarische **WK**-avond beleefd met spanning, gejuich en veel te fanatieke analyses.",
     keywords: ["wk", "kelder", "hans"]
   },
   {
     title: "Adoptie buurttuin burendag",
     story:
-      "Op Burendag liet Schellerhart zien dat gezelligheid en aanpakken samen kunnen gaan. De buurttuin werd geadopteerd, iedereen hielp mee en tussen het werken door was er volop ruimte voor ontmoeting en plezier.",
+      "Tijdens **burendag** stak Schellerhart de handen uit de mouwen na de **adoptie** van de **buurttuin**, met gezelligheid tussendoor.",
     keywords: ["adoptie", "buurttuin", "burendag"]
   },
   {
     title: "Graffiti workshop borden",
     story:
-      "Tijdens een creatieve workshop gingen de borden op tafel en de spuitbussen open. Kleuren vlogen in het rond en voor je het wist ontstonden er opvallende graffiti-kunstwerken met een heel eigen Schellerhart-stijl.",
+      "Tijdens een creatieve **graffiti** **workshop** veranderden gewone **borden** in een vrolijke Schellerhart-chaos vol kleur.",
     keywords: ["graffiti", "workshop", "borden"]
   }
 ];
@@ -51,6 +51,17 @@ export function isJubileeChallenge(title: string | null | undefined): boolean {
 
 export function formatJubileeKeywords(keywords: readonly string[]): string {
   return keywords.map((keyword) => canonicalizeText(keyword)).join(", ");
+}
+
+export function maskJubileeStory(story: string, keywords: readonly string[]): string {
+  return keywords.reduce((result, keyword) => {
+    const pattern = new RegExp(`\\b${escapeRegExp(keyword)}\\b`, "gi");
+    return result.replace(pattern, ".....");
+  }, story.replace(/\*\*/g, ""));
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function matchesJubileeKeywords(guess: string, keywords: readonly string[]): boolean {

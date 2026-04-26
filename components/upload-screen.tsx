@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { MobileShell } from "@/components/mobile-shell";
 import { TeamSelect } from "@/components/team-select";
@@ -25,6 +25,22 @@ type UploadScreenProps = {
 function cacheBust(url: string): string {
   const separator = url.includes("?") ? "&" : "?";
   return `${url}${separator}_=${Date.now()}`;
+}
+
+function renderJubileeStoryWithBold(story: string) {
+  const parts = story.split(/(\*\*.*?\*\*)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={`${part}-${index}`} className="font-black text-ink">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    return <Fragment key={`${part}-${index}`}>{part}</Fragment>;
+  });
 }
 
 export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
@@ -238,11 +254,9 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
                   </h2>
                   {jubileeChallenge ? (
                     <>
-                      <p className="mt-2 text-sm leading-6 text-slate-700">{jubileeChallenge.story}</p>
-                      <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-slate-700">
-                        <p className="font-black text-ink">De 3 steekwoorden die later geraden moeten worden</p>
-                        <p className="mt-1">{formatJubileeKeywords(jubileeChallenge.keywords)}</p>
-                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {renderJubileeStoryWithBold(jubileeChallenge.story)}
+                      </p>
                     </>
                   ) : null}
                 </div>
