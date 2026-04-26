@@ -197,29 +197,44 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
       }
     >
       <section className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card">
-        <div className="mb-4 rounded-3xl bg-amber-50 px-4 py-4 text-sm text-slate-700">
-          <p className="font-black text-ink">Punten bij uploaden</p>
-          {currentRound?.number === 2 ? (
-            <>
-              <p className="mt-1">
-                Dit is de jubileumronde. Jullie beelden een unieke Schellerhart-situatie uit.
-              </p>
-              <p className="mt-1">
-                Andere teams moeten later precies 3 steekwoorden raden. Per goed raadteam krijgen
-                jullie 1 punt.
-              </p>
-            </>
-          ) : (
+        {isJubileeRound && lockedTeamSlug ? (
+          <div className="mb-4 rounded-[2rem] border border-amber-200 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(255,255,255,0.96))] px-5 py-5 text-slate-700 shadow-card">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-accent">
+              10 jaar Schellerhart
+            </p>
+            <p className="mt-2 text-3xl font-black text-ink">
+              {lockedTeam?.name ?? "Team laden..."}
+            </p>
+            <p className="mt-3 text-2xl font-black text-ink">Jubileumronde</p>
+            <p className="mt-3 text-sm leading-6">
+              Deze ronde is anders dan de andere twee. Jullie beelden samen een echt
+              Schellerhart-moment uit.
+            </p>
+            <p className="mt-2 text-sm leading-6">
+              Andere teams moeten later precies{" "}
+              <span className="font-black text-ink">3 steekwoorden</span> raden.
+            </p>
+            <p className="mt-2 text-sm leading-6">
+              Per goed raadteam krijgt jullie team <span className="font-black text-ink">1 punt</span>.
+            </p>
+          </div>
+        ) : null}
+
+        {!isJubileeRound ? (
+          <div className="mb-4 rounded-3xl bg-amber-50 px-4 py-4 text-sm text-slate-700">
+            <p className="font-black text-ink">Punten bij uploaden</p>
             <p className="mt-1">
               Jullie team krijgt later 1 punt voor elke andere ploeg die deze foto goed raadt.
             </p>
-          )}
-        </div>
+          </div>
+        ) : null}
 
         {lockedTeamSlug ? (
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-2xl font-black text-ink">{lockedTeam?.name ?? "Team laden..."}</p>
-          </div>
+          !isJubileeRound ? (
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-2xl font-black text-ink">{lockedTeam?.name ?? "Team laden..."}</p>
+            </div>
+          ) : null
         ) : (
           <TeamSelect
             disabled={Boolean(submittingId) || closed}
@@ -230,21 +245,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
         )}
 
         {currentRound ? (
-          isJubileeRound ? (
-            <div className="mt-4 rounded-[2rem] border border-amber-200 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(255,255,255,0.96))] px-5 py-5 text-slate-700 shadow-card">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-accent">
-                10 jaar Schellerhart
-              </p>
-              <p className="mt-2 text-2xl font-black text-ink">Jubileumronde</p>
-              <p className="mt-2 text-sm leading-6">
-                Deze ronde is anders dan de andere twee. Jullie beelden samen een echt
-                Schellerhart-moment uit.
-              </p>
-              <p className="mt-2 text-sm leading-6">
-                Andere teams moeten later precies <span className="font-black text-ink">3 steekwoorden</span> raden.
-              </p>
-            </div>
-          ) : (
+          isJubileeRound ? null : (
             <div className="mt-4 rounded-3xl bg-slate-100 px-4 py-4 text-sm text-slate-700">
               <p className="text-xl font-black text-ink">{currentRound.title}</p>
               <p className="mt-1">
