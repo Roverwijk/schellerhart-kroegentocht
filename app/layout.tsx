@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Schellerhart kroegentocht",
-  description: "Realtime mobiele webapp voor de Schellerhart kroegentocht met Nel Bannink centraal."
+  title: "Schellerhart Kroegentocht | 10 jaar samen op stap",
+  description: "Realtime mobiele webapp voor de feesteditie van de Schellerhart Kroegentocht, met Nel Bannink centraal en 10 jaar samen op stap."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

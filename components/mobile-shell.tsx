@@ -110,8 +110,11 @@ export function MobileShell({
         <header className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card backdrop-blur">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-dark">
-                Schellerhart kroegentocht
+              <p className="text-xs font-black uppercase tracking-[0.26em] text-accent-dark">
+                Schellerhart Kroegentocht
+              </p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-600">
+                10 jaar samen op stap
               </p>
               <h1 className="mt-2 text-3xl font-black leading-tight">{title}</h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">{subtitle}</p>

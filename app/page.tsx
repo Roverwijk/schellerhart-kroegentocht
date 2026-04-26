@@ -25,7 +25,7 @@ export default function HomePage() {
     <MobileShell
       title="Start"
       phase="waiting"
-      subtitle="Schellerhart kroegentocht met Nel Bannink in de hoofdrol. Snel, mobiel en klaar voor de kroeg."
+      subtitle="Feesteditie van de Schellerhart Kroegentocht. Met Nel Bannink in de hoofdrol en 10 jaar kroegentochtpret in het vizier."
     >
       <section className="grid gap-3">
         {links.map((link) => (
