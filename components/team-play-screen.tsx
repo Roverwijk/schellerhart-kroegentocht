@@ -64,6 +64,15 @@ function gameStateSignature(gameState: GameState): string {
   return `${gameState.phase}:${gameState.current_round_id ?? "none"}`;
 }
 
+function getKeywordFields(guess: string): [string, string, string] {
+  const parts = guess
+    .split(",")
+    .map((part) => part.trim())
+    .slice(0, 3);
+
+  return [parts[0] ?? "", parts[1] ?? "", parts[2] ?? ""];
+}
+
 function LockedVoteStage({ team }: { team: Team }) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [items, setItems] = useState<VotingQueueItem[]>([]);
@@ -143,6 +152,7 @@ function LockedVoteStage({ team }: { team: Team }) {
   const guess = currentDraft?.guess ?? current?.guessed_text ?? "";
   const selectedProverb = currentDraft?.selectedProverb ?? null;
   const jubileeChallenge = current ? getJubileeChallenge(current.proverb_text) : null;
+  const keywordFields = getKeywordFields(guess);
 
   const canVote = useMemo(
     () => Boolean(current && !closed && gameState?.phase === "voting"),
@@ -162,6 +172,15 @@ function LockedVoteStage({ team }: { team: Team }) {
         ...partial
       }
     }));
+  }
+
+  function updateKeywordField(index: number, value: string) {
+    const nextFields = [...keywordFields] as [string, string, string];
+    nextFields[index] = value;
+    updateDraft({
+      guess: nextFields.map((field) => field.trim()).filter(Boolean).join(", "),
+      selectedProverb: null
+    });
   }
 
   async function submitVote() {
@@ -321,26 +340,27 @@ function LockedVoteStage({ team }: { team: Team }) {
                     <p className="mt-2 leading-6">
                       {maskJubileeStory(jubileeChallenge.story, jubileeChallenge.keywords)}
                     </p>
-                    <p className="mt-3 font-semibold">
-                      Typ de 3 steekwoorden:{" "}
-                      <span className="font-black text-ink">....., ....., .....</span>
-                    </p>
+                    <p className="mt-3 font-semibold">Typ precies de 3 steekwoorden die hierbij horen.</p>
                   </div>
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-700">
+                  <div className="space-y-3">
+                    <span className="block text-sm font-semibold text-slate-700">
                       Jullie 3 steekwoorden
                     </span>
-                    <input
-                      className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-base text-ink"
-                      disabled={submitting}
-                      placeholder="Bijv. ....., ....., ....."
-                      type="text"
-                      value={guess}
-                      onChange={(event) =>
-                        updateDraft({ guess: event.target.value, selectedProverb: null })
-                      }
-                    />
-                  </label>
+                    {[0, 1, 2].map((index) => (
+                      <label key={index} className="block">
+                        <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          Woord {index + 1}
+                        </span>
+                        <input
+                          className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-base text-ink"
+                          disabled={submitting}
+                          type="text"
+                          value={keywordFields[index]}
+                          onChange={(event) => updateKeywordField(index, event.target.value)}
+                        />
+                      </label>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <ProverbAutosuggest
@@ -372,7 +392,12 @@ function LockedVoteStage({ team }: { team: Team }) {
               </div>
               <button
                 className="w-full rounded-3xl bg-accent px-4 py-4 text-base font-black text-white transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-slate-300"
-                disabled={!guess.trim() || submitting}
+                disabled={
+                  submitting ||
+                  (jubileeChallenge
+                    ? keywordFields.some((field) => !field.trim())
+                    : !guess.trim())
+                }
                 type="button"
                 onClick={() => {
                   submitVote().catch(() => undefined);
