@@ -338,7 +338,10 @@ function LockedVoteStage({ team }: { team: Team }) {
                   <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-slate-700">
                     <p className="font-black text-ink">Jubileumsituatie</p>
                     <p className="mt-2 leading-6">
-                      {maskJubileeStory(jubileeChallenge.story, jubileeChallenge.keywords)}
+                      {maskJubileeStory(
+                        jubileeChallenge.guessingStory,
+                        jubileeChallenge.keywords
+                      )}
                     </p>
                     <p className="mt-3 font-semibold">Typ precies de 3 steekwoorden die hierbij horen.</p>
                   </div>

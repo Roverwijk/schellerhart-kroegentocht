@@ -3,6 +3,7 @@ import { canonicalizeText, normalizeText } from "@/lib/text";
 export type JubileeChallenge = {
   title: string;
   story: string;
+  guessingStory: string;
   keywords: [string, string, string];
 };
 
@@ -10,24 +11,32 @@ const challenges: JubileeChallenge[] = [
   {
     title: "Online pubquiz corona",
     story:
+      "Tijdens **corona** moesten we allemaal thuis blijven, maar samen organiseerden we verschillende leuke activiteiten, waaronder een hilarische **online** **pubquiz** aan de keukentafel.",
+    guessingStory:
       "Tijdens **corona** bleef iedereen thuis, maar de gezelligheid ging door met een hilarische **online** **pubquiz**.",
     keywords: ["online", "pubquiz", "corona"]
   },
   {
     title: "WK kelder Hans",
     story:
+      "Tijdens diverse **WK**-wedstrijden waren we allemaal welkom bij **Hans** en Anja. Bij hen in de **kelder** beleefden we legendarische avonden met spanning, gejuich en veel te fanatieke analyses.",
+    guessingStory:
       "Bij **Hans** beleefden we in de **kelder** legendarische **WK**-avonden vol spanning en veel te fanatieke analyses.",
     keywords: ["wk", "kelder", "hans"]
   },
   {
     title: "Adoptie buurttuin burendag",
     story:
+      "Tijdens **burendag** staken we de handen uit de mouwen na de **adoptie** van de gemeentestrook; door gezelligheid, koffie en koeken ontstond een prachtige **buurttuin**.",
+    guessingStory:
       "Tijdens **burendag** ontstond na de **adoptie** van de gemeentestrook een prachtige **buurttuin** vol gezelligheid.",
     keywords: ["adoptie", "buurttuin", "burendag"]
   },
   {
     title: "Graffiti workshop borden",
     story:
+      "Tijdens NL-doet volgden we een creatieve **graffiti** **workshop** en veranderden gewone **borden** in kunst. De gemaakte werken gaven Schellerhart nog meer kleur.",
+    guessingStory:
       "Tijdens een creatieve **graffiti** **workshop** veranderden gewone **borden** in kunst die Schellerhart nog meer kleur gaf.",
     keywords: ["graffiti", "workshop", "borden"]
   }
