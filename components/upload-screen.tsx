@@ -128,6 +128,8 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
     [assignments, teamId]
   );
 
+  const isJubileeRound = currentRound?.number === 2;
+
   async function uploadAssignment(assignment: TeamAssignment) {
     const file = photos[assignment.id] ?? null;
     if (!file) {
@@ -216,8 +218,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
 
         {lockedTeamSlug ? (
           <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">Team</span>
-            <p className="text-lg font-black text-ink">{lockedTeam?.name ?? "Team laden..."}</p>
+            <p className="text-2xl font-black text-ink">{lockedTeam?.name ?? "Team laden..."}</p>
           </div>
         ) : (
           <TeamSelect
@@ -229,13 +230,29 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
         )}
 
         {currentRound ? (
-          <div className="mt-4 rounded-3xl bg-slate-100 px-4 py-4 text-sm text-slate-700">
-            <p className="font-black text-ink">{currentRound.title}</p>
-            <p className="mt-1">
-              Dit team heeft in deze ronde {teamAssignments.length || "de"} vaste opdracht
-              {teamAssignments.length === 1 ? "" : "en"} klaarstaan.
-            </p>
-          </div>
+          isJubileeRound ? (
+            <div className="mt-4 rounded-[2rem] border border-amber-200 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(255,255,255,0.96))] px-5 py-5 text-slate-700 shadow-card">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-accent">
+                10 jaar Schellerhart
+              </p>
+              <p className="mt-2 text-2xl font-black text-ink">Jubileumronde</p>
+              <p className="mt-2 text-sm leading-6">
+                Deze ronde is anders dan de andere twee. Jullie beelden samen een echt
+                Schellerhart-moment uit.
+              </p>
+              <p className="mt-2 text-sm leading-6">
+                Andere teams moeten later precies <span className="font-black text-ink">3 steekwoorden</span> raden.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-3xl bg-slate-100 px-4 py-4 text-sm text-slate-700">
+              <p className="text-xl font-black text-ink">{currentRound.title}</p>
+              <p className="mt-1">
+                Dit team heeft in deze ronde {teamAssignments.length || "de"} vaste opdracht
+                {teamAssignments.length === 1 ? "" : "en"} klaarstaan.
+              </p>
+            </div>
+          )
         ) : null}
 
         <div className="mt-4 space-y-4">
