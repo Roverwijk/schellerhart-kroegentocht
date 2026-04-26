@@ -59,6 +59,10 @@ type TeamPlayScreenProps = {
   teamSlug: string;
 };
 
+function gameStateSignature(gameState: GameState): string {
+  return `${gameState.phase}:${gameState.current_round_id ?? "none"}`;
+}
+
 function LockedVoteStage({ team }: { team: Team }) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [items, setItems] = useState<VotingQueueItem[]>([]);
@@ -411,6 +415,7 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const previousSignatureRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -433,7 +438,14 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
 
       setError(null);
       setTeam(lockedTeam);
+      const nextSignature = gameStateSignature(payload.gameState);
+      const previousSignature = previousSignatureRef.current;
+      previousSignatureRef.current = nextSignature;
       setGameState(payload.gameState);
+
+      if (previousSignature && previousSignature !== nextSignature) {
+        window.location.reload();
+      }
     }
 
     load().catch(() => setError("Teampagina laden mislukte."));
@@ -457,7 +469,7 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
 
     const interval = window.setInterval(() => {
       load().catch(() => undefined);
-    }, 15_000);
+    }, 5_000);
 
     return () => {
       active = false;
