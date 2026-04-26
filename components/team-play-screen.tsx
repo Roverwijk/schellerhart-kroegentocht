@@ -313,12 +313,33 @@ function LockedVoteStage({ team }: { team: Team }) {
           ) : null}
 
           {canVote && current ? (
-            <div key={current.submission_id} className="space-y-4">
-              <img
-                alt={`Foto van ${current.team_name}`}
-                className="h-72 w-full rounded-4xl object-cover"
-                src={current.photo_url}
-              />
+              <div key={current.submission_id} className="space-y-4">
+              {jubileeChallenge ? (
+                <div className="rounded-[2rem] border border-amber-200 bg-[linear-gradient(135deg,rgba(251,191,36,0.2),rgba(255,255,255,0.98))] p-3 shadow-card">
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-3xl bg-white/75 px-4 py-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.22em] text-accent">
+                        10 jaar Schellerhart
+                      </p>
+                      <p className="mt-1 text-lg font-black text-ink">Jubileumfoto</p>
+                    </div>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-accent">
+                      Ronde 2
+                    </span>
+                  </div>
+                  <img
+                    alt={`Foto van ${current.team_name}`}
+                    className="h-72 w-full rounded-[1.75rem] border-2 border-white object-cover shadow-[0_12px_30px_rgba(15,23,42,0.14)]"
+                    src={current.photo_url}
+                  />
+                </div>
+              ) : (
+                <img
+                  alt={`Foto van ${current.team_name}`}
+                  className="h-72 w-full rounded-4xl object-cover"
+                  src={current.photo_url}
+                />
+              )}
               <div className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-500">
                 <p>
                   {jubileeChallenge
