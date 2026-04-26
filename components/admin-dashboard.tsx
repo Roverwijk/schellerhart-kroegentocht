@@ -479,7 +479,7 @@ export function AdminDashboard() {
           <div>
             <h2 className="text-lg font-black">Huidige ronde</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Live voortgang voor {snapshot.currentRound.title}. Elk team moet 2 opdrachten uploaden.
+              Live voortgang voor {snapshot.currentRound.title}. Elk team ziet alleen de opdrachten die voor die ronde klaarstaan.
             </p>
           </div>
           {roundWarnings.length > 0 ? (

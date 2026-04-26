@@ -6,6 +6,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { ProverbAutosuggest } from "@/components/proverb-autosuggest";
 import { TimerPill } from "@/components/timer-pill";
 import { UploadScreen } from "@/components/upload-screen";
+import { formatJubileeKeywords, getJubileeChallenge } from "@/lib/jubilee";
 import { createBrowserRealtimeClient } from "@/lib/supabase/browser";
 import type {
   GameState,
@@ -141,6 +142,7 @@ function LockedVoteStage({ team }: { team: Team }) {
   const currentDraft = current ? drafts[current.submission_id] : undefined;
   const guess = currentDraft?.guess ?? current?.guessed_text ?? "";
   const selectedProverb = currentDraft?.selectedProverb ?? null;
+  const jubileeChallenge = current ? getJubileeChallenge(current.proverb_text) : null;
 
   const canVote = useMemo(
     () => Boolean(current && !closed && gameState?.phase === "voting"),
@@ -229,9 +231,20 @@ function LockedVoteStage({ team }: { team: Team }) {
 
           <div className="rounded-3xl bg-amber-50 px-4 py-4 text-sm text-slate-700">
             <p className="font-black text-ink">Punten bij stemmen</p>
-            <p className="mt-1">
-              Raad je goed, dan krijgt jouw team 1 punt en het makersteam van die foto ook 1 punt.
-            </p>
+            {jubileeChallenge ? (
+              <>
+                <p className="mt-1">
+                  Dit is een jubileumfoto. Typ precies de 3 steekwoorden die bij deze situatie horen.
+                </p>
+                <p className="mt-1">
+                  Raad je alle 3 goed, dan krijgt jouw team 1 punt en het makersteam ook 1 punt.
+                </p>
+              </>
+            ) : (
+              <p className="mt-1">
+                Raad je goed, dan krijgt jouw team 1 punt en het makersteam van die foto ook 1 punt.
+              </p>
+            )}
             <p className="mt-1">
               Je mag antwoorden bewaren en aanpassen tot de stemtijd afloopt.
             </p>
@@ -288,7 +301,11 @@ function LockedVoteStage({ team }: { team: Team }) {
                 src={current.photo_url}
               />
               <div className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-500">
-                <p>Niet van jouw team. Typ wat jij denkt dat het spreekwoord is.</p>
+                <p>
+                  {jubileeChallenge
+                    ? "Niet van jouw team. Raad hier de 3 steekwoorden van deze jubileumsituatie."
+                    : "Niet van jouw team. Typ wat jij denkt dat het spreekwoord is."}
+                </p>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
                     current.is_answered ? "bg-teal/10 text-teal" : "bg-slate-100 text-slate-500"
@@ -297,14 +314,44 @@ function LockedVoteStage({ team }: { team: Team }) {
                   {current.is_answered ? "Opgeslagen" : "Open"}
                 </span>
               </div>
-              <ProverbAutosuggest
-                disabled={submitting}
-                label="Jouw antwoord"
-                onCanonicalPick={(next) => updateDraft({ selectedProverb: next })}
-                onChange={(value) => updateDraft({ guess: value })}
-                placeholder="Raad het spreekwoord"
-                value={guess}
-              />
+              {jubileeChallenge ? (
+                <div className="space-y-3">
+                  <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-slate-700">
+                    <p className="font-black text-ink">Jubileumsituatie</p>
+                    <p className="mt-2 leading-6">{jubileeChallenge.story}</p>
+                    <p className="mt-3 font-semibold">
+                      Typ de 3 steekwoorden, bijvoorbeeld:{" "}
+                      <span className="font-black text-ink">
+                        {formatJubileeKeywords(jubileeChallenge.keywords)}
+                      </span>
+                    </p>
+                  </div>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-slate-700">
+                      Jullie 3 steekwoorden
+                    </span>
+                    <input
+                      className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-base text-ink"
+                      disabled={submitting}
+                      placeholder="Bijv. online, pubquiz, corona"
+                      type="text"
+                      value={guess}
+                      onChange={(event) =>
+                        updateDraft({ guess: event.target.value, selectedProverb: null })
+                      }
+                    />
+                  </label>
+                </div>
+              ) : (
+                <ProverbAutosuggest
+                  disabled={submitting}
+                  label="Jouw antwoord"
+                  onCanonicalPick={(next) => updateDraft({ selectedProverb: next })}
+                  onChange={(value) => updateDraft({ guess: value })}
+                  placeholder="Raad het spreekwoord"
+                  value={guess}
+                />
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   className="rounded-3xl bg-slate-100 px-4 py-4 text-base font-black text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
@@ -355,7 +402,7 @@ function LockedVoteStage({ team }: { team: Team }) {
           <div>
             <h2 className="text-lg font-black">Jouw resultaten</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Goed of fout per foto, plus het juiste spreekwoord.
+              Goed of fout per foto, plus het juiste antwoord.
             </p>
           </div>
           {review.length === 0 ? (
@@ -387,8 +434,15 @@ function LockedVoteStage({ team }: { team: Team }) {
                   Jij typte: <span className="font-bold text-ink">{item.guessed_text}</span>
                 </p>
                 <p className="mt-1 text-sm text-slate-600">
-                  Juiste spreekwoord:{" "}
-                  <span className="font-bold text-ink">{item.correct_proverb_text}</span>
+                  {getJubileeChallenge(item.correct_proverb_text) ? "Juiste 3 steekwoorden: " : "Juiste spreekwoord: "}
+                  <span className="font-bold text-ink">
+                    {(() => {
+                      const challenge = getJubileeChallenge(item.correct_proverb_text);
+                      return challenge
+                        ? formatJubileeKeywords(challenge.keywords)
+                        : item.correct_proverb_text;
+                    })()}
+                  </span>
                 </p>
               </article>
             ))

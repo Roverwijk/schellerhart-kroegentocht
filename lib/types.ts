@@ -70,6 +70,7 @@ export type VotingQueueItem = {
   team_id: string;
   team_name: string;
   proverb_id: string;
+  proverb_text?: string;
   vote_id: string | null;
   guessed_text: string;
   guessed_proverb_id: string | null;

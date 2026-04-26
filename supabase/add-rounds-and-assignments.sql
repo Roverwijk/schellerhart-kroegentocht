@@ -55,6 +55,10 @@ values
   ('Te diep in het glaasje hebben gekeken', public.normalize_phrase('Te diep in het glaasje hebben gekeken')),
   ('Het glas is halfvol', public.normalize_phrase('Het glas is halfvol')),
   ('Een fles soldaat maken', public.normalize_phrase('Een fles soldaat maken')),
+  ('Online pubquiz corona', public.normalize_phrase('Online pubquiz corona')),
+  ('WK kelder Hans', public.normalize_phrase('WK kelder Hans')),
+  ('Adoptie buurttuin burendag', public.normalize_phrase('Adoptie buurttuin burendag')),
+  ('Graffiti workshop borden', public.normalize_phrase('Graffiti workshop borden')),
   ('Met de neus in de boter vallen', public.normalize_phrase('Met de neus in de boter vallen')),
   ('Boter bij de vis', public.normalize_phrase('Boter bij de vis')),
   ('Roet in het eten gooien', public.normalize_phrase('Roet in het eten gooien')),
@@ -93,14 +97,10 @@ with assignment_source as (
       (1, 'team-groen', 2, 'Iemand onder de tafel drinken'),
       (1, 'team-geel', 1, 'Een stuk in de kraag drinken'),
       (1, 'team-geel', 2, 'Een storm in een glas water'),
-      (2, 'team-rood', 1, 'Met de neus in de boter vallen'),
-      (2, 'team-rood', 2, 'Voor Pampus liggen'),
-      (2, 'team-blauw', 1, 'Boter bij de vis'),
-      (2, 'team-blauw', 2, 'Tussen wal en schip vallen'),
-      (2, 'team-groen', 1, 'Roet in het eten gooien'),
-      (2, 'team-groen', 2, 'Het roer omgooien'),
-      (2, 'team-geel', 1, 'Met de gebakken peren zitten'),
-      (2, 'team-geel', 2, 'In iemands vaarwater zitten'),
+      (2, 'team-rood', 1, 'Online pubquiz corona'),
+      (2, 'team-blauw', 1, 'WK kelder Hans'),
+      (2, 'team-groen', 1, 'Adoptie buurttuin burendag'),
+      (2, 'team-geel', 1, 'Graffiti workshop borden'),
       (3, 'team-rood', 1, 'Dat scheelt een slok op een borrel'),
       (3, 'team-rood', 2, 'Om de hete brij heen draaien'),
       (3, 'team-blauw', 1, 'Zo dronken als een tor'),
@@ -123,6 +123,44 @@ join public.teams on teams.slug = assignment_source.team_slug
 join public.proverbs on proverbs.normalized_text = public.normalize_phrase(assignment_source.proverb_text)
 on conflict (round_id, team_id, slot) do update
 set proverb_id = excluded.proverb_id;
+
+with assignment_source as (
+  select *
+  from (
+    values
+      (1, 'team-rood', 1, 'Te diep in het glaasje hebben gekeken'),
+      (1, 'team-rood', 2, 'Uit een ander vaatje tappen'),
+      (1, 'team-blauw', 1, 'Het glas is halfvol'),
+      (1, 'team-blauw', 2, 'De gifbeker leegdrinken'),
+      (1, 'team-groen', 1, 'Een fles soldaat maken'),
+      (1, 'team-groen', 2, 'Iemand onder de tafel drinken'),
+      (1, 'team-geel', 1, 'Een stuk in de kraag drinken'),
+      (1, 'team-geel', 2, 'Een storm in een glas water'),
+      (2, 'team-rood', 1, 'Online pubquiz corona'),
+      (2, 'team-blauw', 1, 'WK kelder Hans'),
+      (2, 'team-groen', 1, 'Adoptie buurttuin burendag'),
+      (2, 'team-geel', 1, 'Graffiti workshop borden'),
+      (3, 'team-rood', 1, 'Dat scheelt een slok op een borrel'),
+      (3, 'team-rood', 2, 'Om de hete brij heen draaien'),
+      (3, 'team-blauw', 1, 'Zo dronken als een tor'),
+      (3, 'team-blauw', 2, 'Water bij de wijn doen'),
+      (3, 'team-groen', 1, 'Oude wijn in nieuwe zakken'),
+      (3, 'team-groen', 2, 'Een afzakkertje nemen'),
+      (3, 'team-geel', 1, 'Hand in eigen boezem steken'),
+      (3, 'team-geel', 2, 'Op een droogje zitten')
+  ) as rows(round_number, team_slug, slot, proverb_text)
+)
+delete from public.assignments as assignments
+using public.rounds, public.teams
+where assignments.round_id = rounds.id
+  and assignments.team_id = teams.id
+  and not exists (
+    select 1
+    from assignment_source
+    where assignment_source.round_number = rounds.number
+      and assignment_source.team_slug = teams.slug
+      and assignment_source.slot = assignments.slot
+  );
 
 update public.game_state
 set

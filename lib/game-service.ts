@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { env } from "@/lib/env";
+import { getJubileeChallenge, matchesJubileeKeywords } from "@/lib/jubilee";
 import { bestSuggestion, canonicalizeText, normalizeText } from "@/lib/text";
 import type {
   ActiveSubmission,
@@ -303,7 +304,8 @@ export async function getVotingQueue(
         photo_url,
         team_id,
         team:teams!submissions_team_id_fkey(name),
-        proverb_id
+        proverb_id,
+        proverb:proverbs!submissions_proverb_id_fkey(canonical_text)
       `
     )
     .neq("team_id", teamId)
@@ -319,7 +321,8 @@ export async function getVotingQueue(
     photo_url: item.photo_url,
     team_id: item.team_id,
     team_name: item.team.name,
-    proverb_id: item.proverb_id
+    proverb_id: item.proverb_id,
+    proverb_text: item.proverb.canonical_text
   }));
 
   const { data: votes, error: votesError } = await supabase
@@ -342,6 +345,7 @@ export async function getVotingQueue(
       team_id: submission.team_id,
       team_name: submission.team_name,
       proverb_id: submission.proverb_id,
+      proverb_text: submission.proverb_text,
       vote_id: vote?.id ?? null,
       guessed_text: vote?.guessed_text ?? "",
       guessed_proverb_id: vote?.guessed_proverb_id ?? null,
@@ -404,26 +408,34 @@ export async function insertVote(params: {
     .eq("submission_id", submissionId)
     .maybeSingle();
 
-  const proverbs = await getProverbs(supabase);
-  const suggestedMatch = selectedProverbId
-    ? proverbs.find((proverb) => proverb.id === selectedProverbId) ?? null
-    : (() => {
-        const match = bestSuggestion(guess, proverbs);
-        return match ? proverbs.find((proverb) => proverb.id === match.id) ?? null : null;
-      })();
-
-  const guessedProverbId = suggestedMatch?.id ?? null;
-  const guessedNormalized = suggestedMatch
-    ? normalizeText(suggestedMatch.canonical_text)
-    : normalizedGuess;
-
   const submissionProverb = Array.isArray(submission.proverb)
     ? submission.proverb[0]
     : submission.proverb;
-  const submissionNormalized = submissionProverb.normalized_text;
-  const isCorrect =
-    guessedNormalized === submissionNormalized ||
-    guessedProverbId === submission.proverb_id;
+  const jubileeChallenge = getJubileeChallenge(submissionProverb.canonical_text);
+
+  let guessedProverbId: string | null = null;
+  let isCorrect = false;
+
+  if (jubileeChallenge) {
+    isCorrect = matchesJubileeKeywords(guess, jubileeChallenge.keywords);
+  } else {
+    const proverbs = await getProverbs(supabase);
+    const suggestedMatch = selectedProverbId
+      ? proverbs.find((proverb) => proverb.id === selectedProverbId) ?? null
+      : (() => {
+          const match = bestSuggestion(guess, proverbs);
+          return match ? proverbs.find((proverb) => proverb.id === match.id) ?? null : null;
+        })();
+
+    guessedProverbId = suggestedMatch?.id ?? null;
+    const guessedNormalized = suggestedMatch
+      ? normalizeText(suggestedMatch.canonical_text)
+      : normalizedGuess;
+    const submissionNormalized = submissionProverb.normalized_text;
+    isCorrect =
+      guessedNormalized === submissionNormalized ||
+      guessedProverbId === submission.proverb_id;
+  }
 
   const votePayload = {
     team_id: teamId,

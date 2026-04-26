@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MobileShell } from "@/components/mobile-shell";
 import { TeamSelect } from "@/components/team-select";
 import { TimerPill } from "@/components/timer-pill";
+import { formatJubileeKeywords, getJubileeChallenge } from "@/lib/jubilee";
 import { createBrowserRealtimeClient } from "@/lib/supabase/browser";
 import { isInputClosed } from "@/lib/time";
 import type { GameState, Round, Team, TeamAssignment } from "@/lib/types";
@@ -168,7 +169,7 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
       roundNumber={currentRound?.number ?? null}
       subtitle={
         currentRound
-          ? `Ronde ${currentRound.number}: upload 2 foto's voor jullie vaste opdrachten.`
+          ? `Ronde ${currentRound.number}: upload de opdrachten die voor jullie team klaarstaan.`
           : "Deze teampagina staat klaar voor de volgende ronde."
       }
       actions={
@@ -180,9 +181,21 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
       <section className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card">
         <div className="mb-4 rounded-3xl bg-amber-50 px-4 py-4 text-sm text-slate-700">
           <p className="font-black text-ink">Punten bij uploaden</p>
-          <p className="mt-1">
-            Jullie team krijgt later 1 punt voor elke andere ploeg die deze foto goed raadt.
-          </p>
+          {currentRound?.number === 2 ? (
+            <>
+              <p className="mt-1">
+                Dit is de jubileumronde. Jullie beelden een unieke Schellerhart-situatie uit.
+              </p>
+              <p className="mt-1">
+                Andere teams moeten later precies 3 steekwoorden raden. Per goed raadteam krijgen
+                jullie 1 punt.
+              </p>
+            </>
+          ) : (
+            <p className="mt-1">
+              Jullie team krijgt later 1 punt voor elke andere ploeg die deze foto goed raadt.
+            </p>
+          )}
         </div>
 
         {lockedTeamSlug ? (
@@ -202,24 +215,36 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
         {currentRound ? (
           <div className="mt-4 rounded-3xl bg-slate-100 px-4 py-4 text-sm text-slate-700">
             <p className="font-black text-ink">{currentRound.title}</p>
-            <p className="mt-1">Per ronde heeft elk team precies 2 vaste spreekwoorden.</p>
+            <p className="mt-1">
+              Dit team heeft in deze ronde {teamAssignments.length || "de"} vaste opdracht
+              {teamAssignments.length === 1 ? "" : "en"} klaarstaan.
+            </p>
           </div>
         ) : null}
 
         <div className="mt-4 space-y-4">
-          {teamAssignments.map((assignment) => (
-            <article
-              key={assignment.id}
-              className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
-            >
+          {teamAssignments.map((assignment) => {
+            const jubileeChallenge = getJubileeChallenge(assignment.proverb_text);
+
+            return (
+              <article key={assignment.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                     Opdracht {assignment.slot}
                   </p>
                   <h2 className="mt-2 text-lg font-black text-ink">
-                    {assignment.proverb_text}
+                    {jubileeChallenge ? jubileeChallenge.title : assignment.proverb_text}
                   </h2>
+                  {jubileeChallenge ? (
+                    <>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">{jubileeChallenge.story}</p>
+                      <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-slate-700">
+                        <p className="font-black text-ink">De 3 steekwoorden die later geraden moeten worden</p>
+                        <p className="mt-1">{formatJubileeKeywords(jubileeChallenge.keywords)}</p>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
@@ -275,15 +300,16 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
                 onClick={() => {
                   uploadAssignment(assignment).catch(() => undefined);
                 }}
-              >
+                >
                 {submittingId === assignment.id
                   ? "Bezig..."
                   : assignment.is_uploaded
                     ? "Vervang upload"
                     : "Upload foto"}
               </button>
-            </article>
-          ))}
+              </article>
+            );
+          })}
 
           {teamId && teamAssignments.length === 0 ? (
             <section className="rounded-4xl border border-slate-200 bg-white/85 p-4 text-sm text-slate-700 shadow-card">
