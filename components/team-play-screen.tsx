@@ -611,16 +611,37 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
 
   if (gameState.phase === "waiting") {
     return (
-      <MobileShell
-        title="Wacht op de start"
-        phase="waiting"
-        subtitle="Deze teamlink staat klaar. Zodra de admin het spel opent, schakelt de pagina vanzelf door."
-      >
-        <section className="rounded-4xl border border-slate-200 bg-white/90 p-4 text-sm text-slate-700 shadow-card">
-          Nog even geduld. Nel houdt de sfeer er alvast in tot de kroegentocht begint.
-        </section>
-      </MobileShell>
-    );
+        <MobileShell
+          title="Wacht op de start"
+          phase="waiting"
+          subtitle="Deze teamlink staat klaar. Zodra de admin het spel opent, schakelt de pagina vanzelf door."
+        >
+          <section className="rounded-4xl border border-slate-200 bg-white/90 p-4 text-sm text-slate-700 shadow-card">
+            <p>Nog even geduld. Nel houdt de sfeer er alvast in tot de kroegentocht begint.</p>
+            <div className="mt-4 rounded-3xl bg-slate-50 px-4 py-4">
+              <p className="font-black text-ink">Zo werkt het straks</p>
+              <div className="mt-3 space-y-3 leading-6">
+                <p>
+                  <span className="font-black text-ink">Ronde 1:</span> jullie krijgen 2
+                  spreekwoorden om uit te beelden, te fotograferen en te uploaden.
+                </p>
+                <p>
+                  <span className="font-black text-ink">Ronde 2:</span> dit is de speciale
+                  jubileumronde met 1 uniek Schellerhart-moment.
+                </p>
+                <p>
+                  <span className="font-black text-ink">Ronde 3:</span> jullie krijgen opnieuw 2
+                  spreekwoorden om zo creatief mogelijk uit te beelden.
+                </p>
+                <p>
+                  <span className="font-black text-ink">Finale:</span> daarna raden jullie de
+                  foto&apos;s van de andere teams en pakken jullie punten met goede antwoorden.
+                </p>
+              </div>
+            </div>
+          </section>
+        </MobileShell>
+      );
   }
 
   if (gameState.phase === "upload") {
