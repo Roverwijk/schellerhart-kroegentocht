@@ -53,8 +53,8 @@ export function getJourneyPresentation(
       explanation:
         "Ga met het hele team naar De Glazen Engel aan de Grote Markt. Daar spelen de teams een kort spel tegen elkaar. De winnaar krijgt 3 punten.",
       artwork: {
-        src: `/nel/nel-${gameNumber === 1 ? "b" : "c"}.png?v=${artworkVersion}`,
-        alt: "Nel Bannink houdt de sfeer erin tijdens de tussenstop",
+        src: "/nel/nel-glazen-engel.png?v=20260925a",
+        alt: "Tante Nel proost naast de groene Glazen Engel in Zwolle",
         label: `Tussenstop ${gameNumber}`
       },
       drinkTip: gameNumber === 1
