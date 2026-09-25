@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/mobile-shell";
 import { TimerPill } from "@/components/timer-pill";
 import { createBrowserRealtimeClient } from "@/lib/supabase/browser";
-import type { AdminSnapshot, GameState, Team } from "@/lib/types";
+import type { AdminSnapshot, GameState, JourneyStage, Team } from "@/lib/types";
 
 type ProverbRow = {
   id: string;
@@ -26,6 +26,7 @@ export function AdminDashboard() {
   const [newProverb, setNewProverb] = useState("");
   const [savingState, setSavingState] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [savingBonus, setSavingBonus] = useState(false);
 
   async function refresh() {
     const [stateResponse, proverbResponse] = await Promise.all([
@@ -129,7 +130,11 @@ export function AdminDashboard() {
     );
   }, [proverbQuery, proverbs]);
 
-  async function updateState(phase: GameState["phase"], currentRoundId?: string | null) {
+  async function updateState(
+    phase: GameState["phase"],
+    currentRoundId?: string | null,
+    journeyStage?: JourneyStage | null
+  ) {
     setSavingState(true);
     setError(null);
     setSuccess(null);
@@ -142,6 +147,7 @@ export function AdminDashboard() {
         action: "set-phase",
         phase,
         currentRoundId: currentRoundId ?? null,
+        journeyStage: journeyStage ?? null,
         uploadMinutes,
         votingMinutes
       })
@@ -154,6 +160,30 @@ export function AdminDashboard() {
     }
     setSnapshot(payload);
     setSavingState(false);
+  }
+
+  async function updateMiniGameWinner(gameNumber: 1 | 2, teamId: string | null) {
+    setSavingBonus(true);
+    setError(null);
+    setSuccess(null);
+    const response = await fetch("/api/admin/mini-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameNumber, teamId })
+    });
+    const payload = (await response.json()) as AdminSnapshot & { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Tussenspelwinnaar opslaan mislukte.");
+      setSavingBonus(false);
+      return;
+    }
+    setSnapshot(payload);
+    setSuccess(
+      teamId
+        ? `Winnaar van tussenspel ${gameNumber} opgeslagen: 3 punten.`
+        : `Winnaar van tussenspel ${gameNumber} gewist.`
+    );
+    setSavingBonus(false);
   }
 
   const currentRoundProgress = useMemo(() => {
@@ -181,6 +211,24 @@ export function AdminDashboard() {
       .filter((row) => row.uploaded < row.total)
       .map((row) => `${row.teamName}: ${row.uploaded}/${row.total} uploads binnen`);
   }, [currentRoundProgress, snapshot?.currentRound]);
+
+  const roundsByNumber = useMemo(
+    () => new Map((snapshot?.rounds ?? []).map((round) => [round.number, round] as const)),
+    [snapshot?.rounds]
+  );
+
+  const journeyLabels: Record<JourneyStage, string> = {
+    "round-1": "Onderweg naar de kroegen voor ronde 1",
+    "central-1": "Onderweg naar De Glazen Engel na ronde 1",
+    "round-2": "Onderweg naar de kroegen voor ronde 2",
+    "central-2": "Onderweg naar De Glazen Engel na ronde 2",
+    "round-3": "Onderweg naar de kroegen voor ronde 3",
+    final: "Onderweg naar Het Proeflokaal"
+  };
+
+  const activePhaseLabel = snapshot?.gameState.phase === "waiting" && snapshot.gameState.journey_stage
+    ? journeyLabels[snapshot.gameState.journey_stage]
+    : snapshot?.gameState.phase ?? "laden";
 
   async function toggleOverride(voteId: string, isCorrect: boolean) {
     const response = await fetch("/api/admin/override", {
@@ -345,7 +393,7 @@ export function AdminDashboard() {
                   <div>
                     <h3 className="text-base font-black text-ink">{team.team_name}</h3>
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      {team.correct_votes_received} maker-punten, {team.correct_guesses_made} raad-punten
+                      {team.correct_votes_received} maker, {team.correct_guesses_made} raad, {team.bonus_points} bonus
                     </p>
                   </div>
                 </div>
@@ -361,6 +409,7 @@ export function AdminDashboard() {
                 <p>Stemmen: {team.votes_cast}/{team.votes_available}</p>
                 <p>Maker-punten: {team.correct_votes_received}</p>
                 <p>Raad-punten: {team.correct_guesses_made}</p>
+                <p>Bonuspunten: {team.bonus_points}</p>
               </div>
             </article>
           ))}
@@ -374,7 +423,7 @@ export function AdminDashboard() {
               Actieve fase
             </p>
             <p className="mt-2 text-2xl font-black capitalize text-ink">
-              {snapshot?.gameState.phase ?? "laden"}
+              {activePhaseLabel}
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-600">
               {snapshot?.currentRound ? snapshot.currentRound.title : "Nog geen actieve ronde gekozen"}
@@ -409,57 +458,105 @@ export function AdminDashboard() {
           </div>
 
           <div className="grid gap-2">
+            {([
+              { type: "journey", stage: "round-1", round: 1, label: "1. Stuur teams naar kroeg ronde 1" },
+              { type: "upload", round: 1, label: "2. Start ronde 1" },
+              { type: "journey", stage: "central-1", round: 1, label: "3. Naar De Glazen Engel" },
+              { type: "journey", stage: "round-2", round: 2, label: "4. Stuur teams naar kroeg ronde 2" },
+              { type: "upload", round: 2, label: "5. Start jubileumronde 2" },
+              { type: "journey", stage: "central-2", round: 2, label: "6. Naar De Glazen Engel" },
+              { type: "journey", stage: "round-3", round: 3, label: "7. Stuur teams naar kroeg ronde 3" },
+              { type: "upload", round: 3, label: "8. Start ronde 3" },
+              { type: "journey", stage: "final", round: 3, label: "9. Naar Het Proeflokaal" }
+            ] as const).map((step) => {
+              const round = roundsByNumber.get(step.round);
+              const active = step.type === "upload"
+                ? snapshot?.gameState.phase === "upload" && snapshot.currentRound?.number === step.round
+                : snapshot?.gameState.phase === "waiting" && snapshot.gameState.journey_stage === step.stage;
+              return (
+                <button
+                  key={step.label}
+                  className={`w-full rounded-3xl px-4 py-4 text-left text-base font-black transition ${
+                    active ? "bg-ink text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                  disabled={savingState || !round}
+                  type="button"
+                  onClick={() => {
+                    if (!round) {
+                      return;
+                    }
+                    updateState(
+                      step.type === "upload" ? "upload" : "waiting",
+                      round.id,
+                      step.type === "journey" ? step.stage : null
+                    ).catch(() => undefined);
+                  }}
+                >
+                  {step.label}
+                </button>
+              );
+            })}
+
             <button
-              className={`w-full rounded-3xl px-4 py-4 text-base font-black transition ${
-                snapshot?.gameState.phase === "waiting"
+              className={`w-full rounded-3xl px-4 py-4 text-left text-base font-black transition ${
+                snapshot?.gameState.phase === "voting"
                   ? "bg-ink text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
               disabled={savingState}
               type="button"
               onClick={() => {
-                updateState("waiting", snapshot?.gameState.current_round_id ?? null).catch(() => undefined);
+                updateState("voting", roundsByNumber.get(3)?.id ?? null).catch(() => undefined);
               }}
             >
-              Zet fase op wacht op de start
+              10. Start stemronde
             </button>
-
-            {snapshot?.rounds.map((round) => (
-              <button
-                key={round.id}
-                className={`w-full rounded-3xl px-4 py-4 text-base font-black transition ${
-                  snapshot?.gameState.phase === "upload" && snapshot?.currentRound?.id === round.id
-                    ? "bg-ink text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-                disabled={savingState}
-                type="button"
-                onClick={() => {
-                  updateState("upload", round.id).catch(() => undefined);
-                }}
-              >
-                Open {round.title}
-              </button>
-            ))}
-
-            {(["voting", "results"] as const).map((phase) => (
-              <button
-                key={phase}
-                className={`w-full rounded-3xl px-4 py-4 text-base font-black transition ${
-                  snapshot?.gameState.phase === phase
-                    ? "bg-ink text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-                disabled={savingState}
-                type="button"
-                onClick={() => {
-                  updateState(phase, snapshot?.gameState.current_round_id ?? null).catch(() => undefined);
-                }}
-              >
-                Zet fase op {phase}
-              </button>
-            ))}
+            <button
+              className={`w-full rounded-3xl px-4 py-4 text-left text-base font-black transition ${
+                snapshot?.gameState.phase === "results"
+                  ? "bg-ink text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+              disabled={savingState}
+              type="button"
+              onClick={() => {
+                updateState("results", roundsByNumber.get(3)?.id ?? null).catch(() => undefined);
+              }}
+            >
+              11. Toon uitslag
+            </button>
           </div>
+
+          {snapshot?.gameState.phase === "waiting" && snapshot.gameState.journey_stage ? (
+            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">
+                    Aankomsten
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-amber-950">
+                    {snapshot.arrivals.filter((arrival) => arrival.arrived).length} van {snapshot.arrivals.length} teams zijn er
+                  </p>
+                </div>
+                <span className="rounded-full bg-white px-3 py-2 text-sm font-black text-amber-900">
+                  {snapshot.arrivals.filter((arrival) => arrival.arrived).length}/{snapshot.arrivals.length}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2">
+                {snapshot.arrivals.map((arrival) => (
+                  <div
+                    key={arrival.team_id}
+                    className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-sm"
+                  >
+                    <span className="font-black text-ink">{arrival.team_name}</span>
+                    <span className={arrival.arrived ? "font-black text-teal" : "font-semibold text-slate-400"}>
+                      {arrival.arrived ? "Aangekomen" : "Onderweg"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <button
             className="w-full rounded-3xl bg-berry px-4 py-4 text-base font-black text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:bg-slate-300"
@@ -471,6 +568,45 @@ export function AdminDashboard() {
           >
             {resetting ? "Reset bezig..." : "Reset spel en verwijder foto's"}
           </button>
+        </div>
+      </section>
+
+      <section className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-dark">
+            De Glazen Engel
+          </p>
+          <h2 className="mt-2 text-xl font-black text-ink">Winnaars tussenspellen</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Alleen de winnaar krijgt 3 bonuspunten. Je kunt de keuze later nog aanpassen.
+          </p>
+        </div>
+        <div className="mt-4 grid gap-3">
+          {([1, 2] as const).map((gameNumber) => {
+            const winner = snapshot?.miniGameWins.find((win) => win.game_number === gameNumber);
+            return (
+              <label key={gameNumber} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <span className="mb-2 block text-sm font-black text-ink">
+                  Tussenspel {gameNumber}
+                </span>
+                <select
+                  className="w-full rounded-2xl border-slate-200 bg-white px-3 py-3 font-semibold"
+                  disabled={savingBonus}
+                  value={winner?.team_id ?? ""}
+                  onChange={(event) => {
+                    updateMiniGameWinner(gameNumber, event.target.value || null).catch(() => undefined);
+                  }}
+                >
+                  <option value="">Nog geen winnaar</option>
+                  {snapshot?.teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} (+3 punten)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            );
+          })}
         </div>
       </section>
 
@@ -556,6 +692,7 @@ export function AdminDashboard() {
                 <p>Stemmen: {team.votes_cast}/{team.votes_available}</p>
                 <p>Maker-punten: {team.correct_votes_received}</p>
                 <p>Raad-punten: {team.correct_guesses_made}</p>
+                <p>Bonuspunten: {team.bonus_points}</p>
                 <p>Score: {team.score}</p>
               </div>
             </article>

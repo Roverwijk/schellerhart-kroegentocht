@@ -7,6 +7,7 @@ import { ProverbAutosuggest } from "@/components/proverb-autosuggest";
 import { TimerPill } from "@/components/timer-pill";
 import { UploadScreen } from "@/components/upload-screen";
 import { formatJubileeKeywords, getJubileeChallenge, maskJubileeStory } from "@/lib/jubilee";
+import { getJourneyPresentation } from "@/lib/journey";
 import { createBrowserRealtimeClient } from "@/lib/supabase/browser";
 import type {
   GameState,
@@ -61,7 +62,7 @@ type TeamPlayScreenProps = {
 };
 
 function gameStateSignature(gameState: GameState): string {
-  return `${gameState.phase}:${gameState.current_round_id ?? "none"}`;
+  return `${gameState.phase}:${gameState.current_round_id ?? "none"}:${gameState.journey_stage ?? "none"}`;
 }
 
 function getKeywordFields(guess: string): [string, string, string] {
@@ -514,6 +515,110 @@ function LockedVoteStage({ team }: { team: Team }) {
   );
 }
 
+function JourneyStageScreen({ gameState, team }: { gameState: GameState; team: Team }) {
+  const [arrived, setArrived] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const stage = gameState.journey_stage;
+
+  useEffect(() => {
+    if (!stage) {
+      return;
+    }
+    fetch(cacheBust(`/api/arrival?teamId=${team.id}`), { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json()) as { arrived?: boolean; error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Aankomststatus laden mislukte.");
+        }
+        setArrived(Boolean(payload.arrived));
+      })
+      .catch((cause) => {
+        setError(cause instanceof Error ? cause.message : "Aankomststatus laden mislukte.");
+      });
+  }, [stage, team.id]);
+
+  if (!stage) {
+    return (
+      <MobileShell
+        title="Even geduld"
+        phase="waiting"
+        subtitle="De spelleiding maakt de volgende bestemming klaar."
+      >
+        <section className="rounded-4xl border border-slate-200 bg-white/90 p-5 text-sm text-slate-700 shadow-card">
+          Deze pagina springt vanzelf door zodra jullie weer op pad mogen.
+        </section>
+      </MobileShell>
+    );
+  }
+
+  const presentation = getJourneyPresentation(stage, team.slug);
+
+  async function markArrived() {
+    setSaving(true);
+    setError(null);
+    const response = await fetch("/api/arrival", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamId: team.id })
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Aankomst doorgeven mislukte.");
+      setSaving(false);
+      return;
+    }
+    setArrived(true);
+    setSaving(false);
+  }
+
+  return (
+    <MobileShell
+      title={presentation.title}
+      phase="waiting"
+      subtitle={presentation.subtitle}
+      artworkOverride={presentation.artwork}
+      drinkTipOverride={presentation.drinkTip}
+    >
+      <section className="rounded-4xl border border-white/70 bg-white/90 p-5 shadow-card">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-dark">
+          {team.name}
+        </p>
+        <h2 className="mt-2 text-xl font-black text-ink">Wat gaat er gebeuren?</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-700">{presentation.explanation}</p>
+        <p className="mt-3 rounded-3xl bg-slate-100 px-4 py-3 text-sm font-semibold leading-6 text-slate-600">
+          De spelleiding start de volgende fase zodra alle teams op hun bestemming zijn.
+        </p>
+      </section>
+
+      <button
+        className={`w-full rounded-3xl px-5 py-5 text-lg font-black shadow-card transition ${
+          arrived ? "bg-teal text-white" : "bg-ink text-white hover:bg-slate-800"
+        } disabled:cursor-not-allowed disabled:opacity-70`}
+        disabled={arrived || saving}
+        type="button"
+        onClick={() => {
+          markArrived().catch(() => undefined);
+        }}
+      >
+        {saving ? "Aankomst doorgeven..." : arrived ? "We zijn er!" : "We zijn er"}
+      </button>
+
+      {arrived ? (
+        <section className="rounded-4xl border border-teal/20 bg-teal/10 p-4 text-center text-sm font-semibold text-teal">
+          Jullie aankomst is doorgegeven. Wacht hier tot de spelleiding verdergaat.
+        </section>
+      ) : null}
+
+      {error ? (
+        <section className="rounded-4xl border border-berry/20 bg-rose-50 p-4 text-sm font-semibold text-berry">
+          {error}
+        </section>
+      ) : null}
+    </MobileShell>
+  );
+}
+
 export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
@@ -610,38 +715,7 @@ export function TeamPlayScreen({ teamSlug }: TeamPlayScreenProps) {
   }
 
   if (gameState.phase === "waiting") {
-    return (
-        <MobileShell
-          title="Wacht op de start"
-          phase="waiting"
-          subtitle="Deze teamlink staat klaar. Zodra de admin het spel opent, schakelt de pagina vanzelf door."
-        >
-          <section className="rounded-4xl border border-slate-200 bg-white/90 p-4 text-sm text-slate-700 shadow-card">
-            <p>Nog even geduld. Nel houdt de sfeer er alvast in tot de kroegentocht begint.</p>
-            <div className="mt-4 rounded-3xl bg-slate-50 px-4 py-4">
-              <p className="font-black text-ink">Zo werkt het straks</p>
-              <div className="mt-3 space-y-3 leading-6">
-                <p>
-                  <span className="font-black text-ink">Ronde 1:</span> jullie krijgen 2
-                  spreekwoorden om uit te beelden, te fotograferen en te uploaden.
-                </p>
-                <p>
-                  <span className="font-black text-ink">Ronde 2:</span> dit is de speciale
-                  jubileumronde met 1 uniek Schellerhart-moment.
-                </p>
-                <p>
-                  <span className="font-black text-ink">Ronde 3:</span> jullie krijgen opnieuw 2
-                  spreekwoorden om zo creatief mogelijk uit te beelden.
-                </p>
-                <p>
-                  <span className="font-black text-ink">Finale:</span> daarna raden jullie de
-                  foto&apos;s van de andere teams en pakken jullie punten met goede antwoorden.
-                </p>
-              </div>
-            </div>
-          </section>
-        </MobileShell>
-      );
+    return <JourneyStageScreen gameState={gameState} team={team} />;
   }
 
   if (gameState.phase === "upload") {

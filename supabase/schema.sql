@@ -92,8 +92,25 @@ create table if not exists public.game_state (
   id text primary key default 'singleton' check (id = 'singleton'),
   phase game_phase not null default 'waiting',
   current_round_id uuid null references public.rounds(id) on delete set null,
+  journey_stage text null,
   upload_ends_at timestamptz null,
   voting_ends_at timestamptz null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.team_arrivals (
+  id uuid primary key default gen_random_uuid(),
+  journey_stage text not null,
+  team_id uuid not null references public.teams(id) on delete cascade,
+  arrived_at timestamptz not null default timezone('utc', now()),
+  constraint team_arrivals_stage_team_key unique (journey_stage, team_id)
+);
+
+create table if not exists public.mini_game_wins (
+  game_number integer primary key check (game_number in (1, 2)),
+  team_id uuid not null references public.teams(id) on delete cascade,
+  points integer not null default 3 check (points = 3),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -106,6 +123,8 @@ create unique index if not exists submissions_assignment_id_key on public.submis
 create index if not exists votes_submission_id_idx on public.votes(submission_id);
 create index if not exists votes_team_id_idx on public.votes(team_id);
 create index if not exists proverbs_normalized_text_idx on public.proverbs(normalized_text);
+create index if not exists team_arrivals_stage_idx on public.team_arrivals(journey_stage);
+create index if not exists mini_game_wins_team_id_idx on public.mini_game_wins(team_id);
 
 drop trigger if exists proverbs_set_updated_at on public.proverbs;
 create trigger proverbs_set_updated_at
@@ -119,10 +138,11 @@ before update on public.game_state
 for each row
 execute function public.set_updated_at();
 
-insert into public.game_state (id, phase, upload_ends_at, voting_ends_at)
+insert into public.game_state (id, phase, journey_stage, upload_ends_at, voting_ends_at)
 values (
   'singleton',
   'waiting',
+  'round-1',
   timezone('utc', now()) + interval '20 minutes',
   timezone('utc', now()) + interval '45 minutes'
 )
@@ -135,6 +155,8 @@ alter table public.assignments enable row level security;
 alter table public.submissions enable row level security;
 alter table public.votes enable row level security;
 alter table public.game_state enable row level security;
+alter table public.team_arrivals enable row level security;
+alter table public.mini_game_wins enable row level security;
 
 drop policy if exists "public can read teams" on public.teams;
 create policy "public can read teams"

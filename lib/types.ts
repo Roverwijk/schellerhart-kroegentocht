@@ -1,5 +1,13 @@
 export type Phase = "waiting" | "upload" | "voting" | "results";
 
+export type JourneyStage =
+  | "round-1"
+  | "central-1"
+  | "round-2"
+  | "central-2"
+  | "round-3"
+  | "final";
+
 export type Team = {
   id: string;
   name: string;
@@ -11,6 +19,7 @@ export type GameState = {
   id: string;
   phase: Phase;
   current_round_id: string | null;
+  journey_stage: JourneyStage | null;
   upload_ends_at: string | null;
   voting_ends_at: string | null;
   created_at?: string;
@@ -85,7 +94,22 @@ export type TeamProgress = {
   votes_available: number;
   correct_votes_received: number;
   correct_guesses_made: number;
+  bonus_points: number;
   score: number;
+};
+
+export type ArrivalStatus = {
+  team_id: string;
+  team_name: string;
+  arrived: boolean;
+  arrived_at: string | null;
+};
+
+export type MiniGameWin = {
+  game_number: 1 | 2;
+  team_id: string;
+  team_name: string;
+  points: number;
 };
 
 export type AdminVoteRow = {
@@ -116,5 +140,7 @@ export type AdminSnapshot = {
   assignments: TeamAssignment[];
   progress: TeamProgress[];
   submissions: AdminSubmissionRow[];
+  arrivals: ArrivalStatus[];
+  miniGameWins: MiniGameWin[];
   winner: TeamProgress | null;
 };

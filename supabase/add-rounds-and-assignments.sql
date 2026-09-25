@@ -95,20 +95,15 @@ with assignment_source as (
       (1, 'team-blauw', 2, 'De gifbeker leegdrinken'),
       (1, 'team-groen', 1, 'Een fles soldaat maken'),
       (1, 'team-groen', 2, 'Iemand onder de tafel drinken'),
-      (1, 'team-geel', 1, 'Een stuk in de kraag drinken'),
-      (1, 'team-geel', 2, 'Een storm in een glas water'),
       (2, 'team-rood', 1, 'Online pubquiz corona'),
       (2, 'team-blauw', 1, 'WK kelder Hans'),
       (2, 'team-groen', 1, 'Adoptie buurttuin burendag'),
-      (2, 'team-geel', 1, 'Graffiti workshop borden'),
       (3, 'team-rood', 1, 'Dat scheelt een slok op een borrel'),
       (3, 'team-rood', 2, 'Om de hete brij heen draaien'),
       (3, 'team-blauw', 1, 'Zo dronken als een tor'),
       (3, 'team-blauw', 2, 'Water bij de wijn doen'),
       (3, 'team-groen', 1, 'Oude wijn in nieuwe zakken'),
-      (3, 'team-groen', 2, 'Een afzakkertje nemen'),
-      (3, 'team-geel', 1, 'Hand in eigen boezem steken'),
-      (3, 'team-geel', 2, 'Op een droogje zitten')
+      (3, 'team-groen', 2, 'Een afzakkertje nemen')
   ) as rows(round_number, team_slug, slot, proverb_text)
 )
 insert into public.assignments (round_id, team_id, proverb_id, slot)
@@ -134,20 +129,15 @@ with assignment_source as (
       (1, 'team-blauw', 2, 'De gifbeker leegdrinken'),
       (1, 'team-groen', 1, 'Een fles soldaat maken'),
       (1, 'team-groen', 2, 'Iemand onder de tafel drinken'),
-      (1, 'team-geel', 1, 'Een stuk in de kraag drinken'),
-      (1, 'team-geel', 2, 'Een storm in een glas water'),
       (2, 'team-rood', 1, 'Online pubquiz corona'),
       (2, 'team-blauw', 1, 'WK kelder Hans'),
       (2, 'team-groen', 1, 'Adoptie buurttuin burendag'),
-      (2, 'team-geel', 1, 'Graffiti workshop borden'),
       (3, 'team-rood', 1, 'Dat scheelt een slok op een borrel'),
       (3, 'team-rood', 2, 'Om de hete brij heen draaien'),
       (3, 'team-blauw', 1, 'Zo dronken als een tor'),
       (3, 'team-blauw', 2, 'Water bij de wijn doen'),
       (3, 'team-groen', 1, 'Oude wijn in nieuwe zakken'),
-      (3, 'team-groen', 2, 'Een afzakkertje nemen'),
-      (3, 'team-geel', 1, 'Hand in eigen boezem steken'),
-      (3, 'team-geel', 2, 'Op een droogje zitten')
+      (3, 'team-groen', 2, 'Een afzakkertje nemen')
   ) as rows(round_number, team_slug, slot, proverb_text)
 )
 delete from public.assignments as assignments
@@ -165,5 +155,6 @@ where assignments.round_id = rounds.id
 update public.game_state
 set
   phase = 'waiting',
-  current_round_id = null
+  current_round_id = null,
+  journey_stage = 'round-1'
 where id = 'singleton';

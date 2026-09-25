@@ -480,6 +480,41 @@ export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminS
     ? await getAssignmentsForRound(supabase, currentRound.id)
     : [];
 
+  const [arrivalsResult, miniGameWinsResult] = await Promise.all([
+    supabase.from("team_arrivals").select("journey_stage, team_id, arrived_at"),
+    supabase
+      .from("mini_game_wins")
+      .select("game_number, team_id, points, team:teams!mini_game_wins_team_id_fkey(name)")
+      .order("game_number")
+  ]);
+
+  if (arrivalsResult.error) {
+    throw new Error("Aankomststatus kon niet worden geladen.");
+  }
+
+  if (miniGameWinsResult.error) {
+    throw new Error("Tussenspelpunten konden niet worden geladen.");
+  }
+
+  const arrivals = teams.map((team) => {
+    const arrival = (arrivalsResult.data ?? []).find(
+      (item) => item.team_id === team.id && item.journey_stage === gameState.journey_stage
+    );
+    return {
+      team_id: team.id,
+      team_name: team.name,
+      arrived: Boolean(arrival),
+      arrived_at: arrival?.arrived_at ?? null
+    };
+  });
+
+  const miniGameWins = (miniGameWinsResult.data ?? []).map((win: any) => ({
+    game_number: win.game_number as 1 | 2,
+    team_id: win.team_id,
+    team_name: Array.isArray(win.team) ? win.team[0]?.name ?? "Onbekend team" : win.team.name,
+    points: win.points
+  }));
+
   const { data: submissions, error } = await supabase
     .from("submissions")
     .select(
@@ -536,7 +571,10 @@ export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminS
       return sum + submission.votes.filter((vote: { is_correct: boolean }) => vote.is_correct).length;
     }, 0);
     const correctGuessesMade = ownVotes.filter((vote) => vote.is_correct).length;
-    const score = correctVotesReceived + correctGuessesMade;
+    const bonusPoints = miniGameWins
+      .filter((win) => win.team_id === team.id)
+      .reduce((sum, win) => sum + win.points, 0);
+    const score = correctVotesReceived + correctGuessesMade + bonusPoints;
 
     return {
       team_id: team.id,
@@ -546,6 +584,7 @@ export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminS
       votes_available: availableVotes,
       correct_votes_received: correctVotesReceived,
       correct_guesses_made: correctGuessesMade,
+      bonus_points: bonusPoints,
       score
     };
   });
@@ -567,8 +606,82 @@ export async function getAdminSnapshot(supabase: SupabaseClient): Promise<AdminS
     assignments,
     progress,
     submissions: formattedSubmissions,
+    arrivals,
+    miniGameWins,
     winner
   };
+}
+
+export async function recordTeamArrival(
+  supabase: SupabaseClient,
+  teamId: string
+): Promise<void> {
+  const gameState = await getGameState(supabase);
+  if (gameState.phase !== "waiting" || !gameState.journey_stage) {
+    throw new Error("Er is nu geen actieve reisbestemming.");
+  }
+
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("id", teamId)
+    .maybeSingle();
+
+  if (teamError || !team) {
+    throw new Error("Dit team bestaat niet meer.");
+  }
+
+  const { error } = await supabase.from("team_arrivals").upsert(
+    {
+      journey_stage: gameState.journey_stage,
+      team_id: teamId,
+      arrived_at: new Date().toISOString()
+    },
+    { onConflict: "journey_stage,team_id" }
+  );
+
+  if (error) {
+    throw new Error("Aankomst doorgeven mislukte.");
+  }
+}
+
+export async function setMiniGameWinner(
+  supabase: SupabaseClient,
+  gameNumber: 1 | 2,
+  teamId: string | null
+): Promise<void> {
+  if (!teamId) {
+    const { error } = await supabase
+      .from("mini_game_wins")
+      .delete()
+      .eq("game_number", gameNumber);
+    if (error) {
+      throw new Error("Tussenspelwinnaar verwijderen mislukte.");
+    }
+    return;
+  }
+
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("id", teamId)
+    .maybeSingle();
+  if (teamError || !team) {
+    throw new Error("Het gekozen team bestaat niet meer.");
+  }
+
+  const { error } = await supabase.from("mini_game_wins").upsert(
+    {
+      game_number: gameNumber,
+      team_id: teamId,
+      points: 3,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "game_number" }
+  );
+  if (error) {
+    throw new Error("Tussenspelwinnaar opslaan mislukte.");
+  }
 }
 
 export async function resetGameRound(
@@ -613,6 +726,22 @@ export async function resetGameRound(
     }
   }
 
+  const { error: arrivalsDeleteError } = await supabase
+    .from("team_arrivals")
+    .delete()
+    .not("id", "is", null);
+  if (arrivalsDeleteError) {
+    throw new Error("Aankomststatus resetten mislukte.");
+  }
+
+  const { error: miniGamesDeleteError } = await supabase
+    .from("mini_game_wins")
+    .delete()
+    .not("game_number", "is", null);
+  if (miniGamesDeleteError) {
+    throw new Error("Tussenspelpunten resetten mislukte.");
+  }
+
   const { error: orphanVotesError } = await supabase
     .from("votes")
     .delete()
@@ -638,6 +767,7 @@ export async function resetGameRound(
     .update({
       phase: "waiting",
       current_round_id: null,
+      journey_stage: "round-1",
       upload_ends_at: new Date(Date.now() + uploadMinutes * 60_000).toISOString(),
       voting_ends_at: new Date(Date.now() + votingMinutes * 60_000).toISOString()
     })

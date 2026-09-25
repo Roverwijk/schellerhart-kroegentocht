@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { getAdminSnapshot, resetGameRound } from "@/lib/game-service";
 import { createServiceClient } from "@/lib/supabase/server";
+import type { JourneyStage } from "@/lib/types";
 
 function isoAfterMinutes(minutes: number): string {
   return new Date(Date.now() + minutes * 60_000).toISOString();
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       action?: "set-phase" | "reset";
       phase: "waiting" | "upload" | "voting" | "results";
       currentRoundId?: string | null;
+      journeyStage?: JourneyStage | null;
       uploadMinutes?: number;
       votingMinutes?: number;
     };
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
     const payload = {
       phase: body.phase,
       current_round_id: body.currentRoundId ?? null,
+      journey_stage: body.phase === "waiting" ? body.journeyStage ?? null : null,
       upload_ends_at: isoAfterMinutes(uploadMinutes),
       voting_ends_at: isoAfterMinutes(votingMinutes)
     };

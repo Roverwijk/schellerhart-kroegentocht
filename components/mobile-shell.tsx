@@ -11,6 +11,8 @@ type MobileShellProps = {
   phase?: Phase;
   roundNumber?: number | null;
   actions?: ReactNode;
+  artworkOverride?: { src: string; alt: string; label: string };
+  drinkTipOverride?: { drink: string; note: string };
   children: ReactNode;
 };
 
@@ -95,14 +97,20 @@ export function MobileShell({
   phase = "waiting",
   roundNumber = null,
   actions,
+  artworkOverride,
+  drinkTipOverride,
   children
 }: MobileShellProps) {
-  const artwork =
-    phase === "upload" && roundNumber ? roundUploadArtwork[roundNumber] ?? phaseArtwork.upload : phaseArtwork[phase];
-  const drinkTip =
+  const artwork = artworkOverride ?? (
+    phase === "upload" && roundNumber
+      ? roundUploadArtwork[roundNumber] ?? phaseArtwork.upload
+      : phaseArtwork[phase]
+  );
+  const drinkTip = drinkTipOverride ?? (
     phase === "upload" && roundNumber
       ? roundUploadDrinkTips[roundNumber] ?? phaseDrinkTips.upload
-      : phaseDrinkTips[phase];
+      : phaseDrinkTips[phase]
+  );
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.2),_transparent_35%),linear-gradient(180deg,_#fff7ed_0%,_#f8fafc_42%,_#e2e8f0_100%)] px-4 py-6 text-ink">
