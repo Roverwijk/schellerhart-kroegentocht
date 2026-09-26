@@ -217,6 +217,9 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
             <p className="mt-2 text-sm leading-6">
               Per goed raadteam krijgt jullie team <span className="font-black text-ink">1 punt</span>.
             </p>
+            <p className="mt-2 text-sm font-black leading-6 text-berry">
+              Let op: er mag geen tekst op de foto staan.
+            </p>
           </div>
         ) : null}
 
@@ -225,6 +228,9 @@ export function UploadScreen({ lockedTeamSlug }: UploadScreenProps) {
             <p className="font-black text-ink">Punten bij uploaden</p>
             <p className="mt-1">
               Jullie team krijgt later 1 punt voor elke andere ploeg die deze foto goed raadt.
+            </p>
+            <p className="mt-2 font-black text-berry">
+              Let op: er mag geen tekst op de foto staan.
             </p>
           </div>
         ) : null}

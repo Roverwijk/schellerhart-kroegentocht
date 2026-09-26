@@ -11,9 +11,9 @@ const challenges: JubileeChallenge[] = [
   {
     title: "Online pubquiz corona",
     story:
-      "Tijdens **corona** moesten we allemaal thuis blijven, maar samen organiseerden we verschillende leuke activiteiten, waaronder een hilarische **online** **pubquiz** aan de keukentafel.",
+      "Tijdens **corona** moesten we allemaal thuis blijven, maar samen organiseerden we verschillende leuke activiteiten, waaronder we aan de keukentafel **online** een hilarische **pubquiz** organiseerden.",
     guessingStory:
-      "Tijdens **corona** bleef iedereen thuis, maar de gezelligheid ging door met een hilarische **online** **pubquiz**.",
+      "Tijdens **corona** bleef iedereen thuis, maar gingen we **online** aan de keukentafel los met een hilarische **pubquiz**.",
     keywords: ["online", "pubquiz", "corona"]
   },
   {
